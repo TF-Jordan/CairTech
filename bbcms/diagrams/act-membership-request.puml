@@ -1,0 +1,61 @@
+@startuml act-membership-request
+!theme plain
+skinparam activityFontSize 11
+
+title Diagramme d'activité — Demande d'adhésion et affectation
+
+|Visiteur|
+start
+:Télécharge l'app /\nouvre le site CHF;
+:Crée un compte\n(email, mot de passe, profil);
+:Précise son type :\nÉtudiant ou Professionnel;
+
+if (Étudiant ?) then (oui)
+    :Sélectionne son école\n(BibleClub) et son niveau;
+else (non — Professionnel)
+    :Renseigne sa profession;
+endif
+
+:Soumet la demande\n(MembershipRequest = PENDING);
+:Reçoit un e-mail d'activation;
+
+|bbcms-core|
+:Stocke UserAccount + MembershipRequest;
+:Publie événement\nMEMBERSHIP_REQUESTED;
+
+|Leader BBC ou Leader National|
+:Reçoit la notification\n(push / e-mail);
+:Consulte la file des\ndemandes en attente;
+
+if (Demande valide ?) then (oui)
+    if (Étudiant ?) then (oui)
+        :Vérifie / corrige le BBC\net le niveau;
+        :Approuve la demande;
+        |bbcms-core|
+        :Crée Member (kind=STUDENT,\n status=ACTIVE);
+    else (non — Professionnel)
+        :Ajoute aux professionnels CHF\n(pas rattaché à un BBC);
+        |bbcms-core|
+        :Crée Member (kind=PROFESSIONAL);
+    endif
+
+    :Met userType à jour;
+    :Publie MEMBER_ADDED;
+    :Notifie l'utilisateur\n« Bienvenue »;
+    |Visiteur|
+    :Devient Membre;
+    :Accède aux fonctionnalités\nselon son rôle;
+    stop
+else (non)
+    |Leader BBC ou Leader National|
+    :Saisit un motif de rejet;
+    :Rejette la demande;
+    |bbcms-core|
+    :MembershipRequest = REJECTED;
+    :Notifie l'utilisateur\n+ motif;
+    |Visiteur|
+    :Peut soumettre une\nnouvelle demande;
+    stop
+endif
+
+@enduml

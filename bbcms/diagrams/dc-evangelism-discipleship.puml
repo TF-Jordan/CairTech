@@ -1,0 +1,91 @@
+@startuml dc-evangelism-discipleship
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Évangélisation & Discipulat" #FFF5FA {
+
+    class EvangelismProgram extends BaseEntity {
+        - title : String
+        - type : EvangelismType
+        - bibleClubsConcerned : Set<UUID>
+        - dates : Set<LocalDate>
+        - totalPreached : int
+        - totalSaved : int
+        - totalEncouraged : int
+        - objectiveBelievers : int
+        - status : EvangelismStatus
+        + plan() : void
+        + close() : void
+        + addRecord(rec) : void
+        + percentageRealization() : BigDecimal
+    }
+
+    class EvangelismRecord extends BaseEntity {
+        - evangelismProgramId : UUID
+        - date : LocalDate
+        - participantMemberIds : Set<UUID>
+        - nbPreached : int
+        - nbBelieved : int
+        - nbEncouraged : int
+        - nbTractsShared : int
+        - savedContacts : String
+        - notes : String
+        + validateInProgramDates() : void
+    }
+
+    class DiscipleLink extends BaseEntity {
+        - discipleMakerMemberId : UUID
+        - discipleMemberId : UUID
+        - dateAssigned : LocalDate
+        - dateEnded : LocalDate
+        - active : boolean
+        + end() : void
+    }
+
+    class DiscipleshipRecord extends BaseEntity {
+        - discipleMakerMemberId : UUID
+        - meetingId : UUID
+        - dateOccurred : LocalDate
+        - startTime : LocalTime
+        - endTime : LocalTime
+        - presentDiscipleIds : Set<UUID>
+        - theme : String
+        - location : String
+        - meetingDescription : String
+        - disciplesStateText : String
+        - spiritualInvestmentText : String
+    }
+
+    enum EvangelismStatus {
+        PLANNED
+        ONGOING
+        CLOSED
+    }
+
+    enum EvangelismType {
+        INTERNAL_BBC
+        JOINT_BBC
+        NATIONAL
+    }
+
+    EvangelismProgram *-- "0..*" EvangelismRecord
+    EvangelismProgram --> EvangelismStatus
+    EvangelismProgram --> EvangelismType
+}
+
+@enduml

@@ -1,0 +1,71 @@
+@startuml dc-participation
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Participation & Fidélité" #F0FFF0 {
+
+    class AttendanceScore extends BaseEntity {
+        - memberId : UUID
+        - bibleClubId : UUID
+        - levelId : UUID
+        - academicYear : int
+        - score : int
+        - totalEligible : int
+        - faithfulPercentage : BigDecimal
+        - faithful : boolean
+        - lastComputedAt : Instant
+        + increment(meetingId) : void
+        + recompute(eligible, threshold) : void
+        + reset() : void
+        + isFaithful(threshold) : boolean
+    }
+
+    class FaithfulnessRecord <<Value Object>> {
+        - memberId : UUID
+        - meetingId : UUID
+        - eventId : UUID
+        - source : FaithfulnessSource
+        - countedAt : Instant
+        - weight : int
+    }
+
+    class InactivityWatch extends BaseEntity {
+        - memberId : UUID
+        - lastSeenAt : Instant
+        - consecutiveAbsences : int
+        - thresholdDays : int
+        - removedAt : Instant
+        + register(meetingId) : void
+        + removeIfStale(now) : boolean
+    }
+
+    enum FaithfulnessSource {
+        CLASS_MEETING
+        BBC_MEETING
+        JOINT_MEETING
+        EVENT
+        EVANGELISM
+        DISCIPLESHIP
+        INTERCESSION
+    }
+
+    AttendanceScore *-- "0..*" FaithfulnessRecord
+    FaithfulnessRecord --> FaithfulnessSource
+}
+
+@enduml

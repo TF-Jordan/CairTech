@@ -1,0 +1,33 @@
+@startuml sm-event
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — Event
+
+[*] --> PLANNED : plan(type, plannedStart)
+
+PLANNED --> REGISTRATION_OPEN : openRegistration()
+PLANNED --> CANCELLED : cancel(reason)
+
+REGISTRATION_OPEN --> ONGOING : start()\n[date H atteinte]
+REGISTRATION_OPEN --> CANCELLED : cancel(reason)
+
+ONGOING --> ENDED : end()
+ENDED --> [*]
+CANCELLED --> [*]
+
+note right of REGISTRATION_OPEN
+  Les membres CHF s'inscrivent
+  via UC_EVT_ENROLL.
+  L'inscription est idempotente.
+end note
+
+note right of ENDED
+  Les présences sont saisies
+  par les Leaders Nationaux.
+  participantsPercentage et
+  percentagePresent sont
+  recalculés à la clôture.
+end note
+
+@enduml

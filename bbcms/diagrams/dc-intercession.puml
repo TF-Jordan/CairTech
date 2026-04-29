@@ -1,0 +1,73 @@
+@startuml dc-intercession
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Intercession" #F5FFFA {
+
+    class PrayerChain extends BaseEntity {
+        - title : String
+        - bibleClubId : UUID
+        - dateStart : LocalDate
+        - dateEnd : LocalDate
+        - status : PrayerChainStatus
+        + start() : void
+        + close() : void
+        + addSlot(slot) : void
+        + countCovered() : int
+    }
+
+    class PrayerSlot extends BaseEntity {
+        - prayerChainId : UUID
+        - intercessorMemberId : UUID
+        - dateTimeStart : Instant
+        - dateTimeEnd : Instant
+        - covered : boolean
+        - note : String
+        + cover() : void
+        + release() : void
+    }
+
+    class IntercessorAssignment extends BaseEntity {
+        - memberId : UUID
+        - bibleClubId : UUID
+        - dateStart : LocalDate
+        - dateEnd : LocalDate
+        - active : boolean
+        + revoke() : void
+    }
+
+    class PrayerMeetingReport extends BaseEntity {
+        - meetingId : UUID
+        - prayerChainId : UUID
+        - reportText : String
+        - nbIntercessors : int
+        - dateOccurred : LocalDate
+    }
+
+    enum PrayerChainStatus {
+        DRAFT
+        ACTIVE
+        CLOSED
+    }
+
+    PrayerChain *-- "0..*" PrayerSlot
+    PrayerChain o-- "0..*" PrayerMeetingReport
+    PrayerChain --> PrayerChainStatus
+}
+
+@enduml

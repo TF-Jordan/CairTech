@@ -1,0 +1,86 @@
+@startuml dc-event
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Événements" #F5FAFF {
+
+    class Event extends BaseEntity {
+        - title : String
+        - type : EventType
+        - plannedStartDateTime : Instant
+        - plannedEndDateTime : Instant
+        - dateTimeStarted : Instant
+        - dateTimeEnded : Instant
+        - duration : Duration
+        - location : String
+        - maxPictures : int
+        - status : EventStatus
+        + plan() : void
+        + start() : void
+        + end() : void
+        + addParticipant(memberId) : void
+        + recordPresence(memberId) : void
+        + nbParticipants() : int
+        + nbPresent() : int
+        + participantsPercentage() : BigDecimal
+        + percentagePresent() : BigDecimal
+    }
+
+    class EventParticipation extends BaseEntity {
+        - eventId : UUID
+        - memberId : UUID
+        - visitorId : UUID
+        - registeredAt : Instant
+        - present : boolean
+        - presentAt : Instant
+        + markPresent() : void
+    }
+
+    class EventPicture <<Value Object>> {
+        - fileId : UUID
+        - caption : String
+        - takenAt : Instant
+    }
+
+    enum EventStatus {
+        PLANNED
+        REGISTRATION_OPEN
+        ONGOING
+        ENDED
+        CANCELLED
+    }
+
+    enum EventType {
+        NATIONAL_CONGRESS
+        NATIONAL_SUMMIT
+        CONFERENCE
+        WELCOME_PARTY
+        FEAST
+        BANKET
+        CONCERT
+        GENERAL_RETREAT
+        OTHER
+    }
+
+    Event *-- "0..*" EventParticipation
+    Event *-- "0..*" EventPicture
+    Event --> EventStatus
+    Event --> EventType
+}
+
+@enduml

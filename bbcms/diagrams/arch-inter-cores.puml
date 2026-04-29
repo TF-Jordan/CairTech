@@ -1,0 +1,63 @@
+@startuml arch-inter-cores
+!theme plain
+skinparam componentStyle rectangle
+
+title Cartographie des interactions bbcms-core ↔ autres cores
+
+' Cores transverses
+package "Transverse" #EEEEEE {
+    component [common-core] as common
+    component [kernel-core] as kernel
+}
+
+package "Identité & Accès" #E8F5E9 {
+    component [auth-core] as auth
+    component [roles-core] as roles
+    component [actor-core] as actor
+}
+
+package "Organisation" #FFF3E0 {
+    component [organization-core] as org
+    component [settings-core] as settings
+}
+
+package "Services" #E3F2FD {
+    component [file-core] as file
+    component [notification-core] as notif
+}
+
+' Nouveau core
+package "Vie Spirituelle (CHF)" #E8EAF6 {
+    component [**bbcms-core**] as bbcms #7986CB
+}
+
+queue "Kafka" as kafka
+
+' Relations synchrones (port/out)
+bbcms -down-> actor : <<port/out>>\nrésolution PartyRef\n(personne, leader)
+bbcms -down-> org : <<port/out>>\nstructure CHF / BBC / Niveau
+bbcms -down-> settings : <<port/out>>\nseuils faithfulness,\nmax photos / meeting,\nséquences
+bbcms -down-> file : <<port/out>>\nphotos, attestations,\nimages d'événements
+bbcms -down-> notif : <<port/out>>\npush meeting,\nrappels, alarmes
+
+' Relations implicites
+bbcms .up.> common : <<extends>>\nBaseEntity, PartyRef\nPagedResponse
+bbcms .up.> kernel : <<utilise>>\noutbox, audit,\ntenant routing
+bbcms ..> roles : <<@Secured>>\nvérification transparente\nvia filtre WebFlux
+bbcms ..> auth : <<implicite>>\nJWT validé par\nkernel-core filter
+
+' Relations asynchrones (Kafka — bbcms publie)
+bbcms -right-> kafka : publie\nMEMBER_ADDED\nLEADER_ASSIGNED\nMEETING_PLANNED\nMEETING_RECORDED\nEVENT_PLANNED\nEVANGELISM_RECORDED\nFAITHFULNESS_COMPUTED\nBBC_RESET
+
+kafka -right-> notif : consume\nMEETING_PLANNED\nEVENT_PLANNED\n(envoi notifications)
+
+kafka -right-> actor : consume\nMEMBER_ADDED\nLEADER_ASSIGNED
+
+' Callbacks
+notif --> kafka : publie\nNOTIFICATION_DELIVERED\nNOTIFICATION_FAILED
+kafka --> bbcms : consume\nNOTIFICATION_DELIVERED
+
+actor --> kafka : publie\nACTOR_UPDATED
+kafka --> bbcms : consume\nACTOR_UPDATED
+
+@enduml

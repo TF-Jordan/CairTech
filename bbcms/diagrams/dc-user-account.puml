@@ -1,0 +1,105 @@
+@startuml dc-user-account
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+
+    class PartyRef {
+        - partyId : UUID
+        - partyType : String
+        - displayName : String
+        + resolve() : Mono<PartySnapshot>
+    }
+}
+
+package "bbcms-core / domain — Comptes & Inscriptions" #F5F5FF {
+
+    class UserAccount extends BaseEntity {
+        - actorRef : PartyRef
+        - email : String
+        - passwordHash : String
+        - phone : String
+        - status : AccountStatus
+        - userType : UserType
+        - lastLoginAt : Instant
+        - locale : String
+        + activate() : void
+        + deactivate() : void
+        + updateProfile(...) : void
+        + changePassword(old, new) : void
+    }
+
+    class MembershipRequest extends BaseEntity {
+        - userAccountId : UUID
+        - requestedType : UserType
+        - bibleClubId : UUID
+        - levelId : UUID
+        - profession : String
+        - status : MembershipRequestStatus
+        - decisionBy : UUID
+        - decisionAt : Instant
+        - decisionComment : String
+        + approve(by, bbcId, levelId) : void
+        + reject(by, reason) : void
+        + cancel() : void
+    }
+
+    class UserProfile <<Value Object>> {
+        - firstNames : String
+        - nextNames : String
+        - dateOfBirth : LocalDate
+        - gender : Gender
+        - dateBornAgain : LocalDate
+        - howBornAgain : String
+        - dateEntered : LocalDate
+        - pictureFileId : UUID
+    }
+
+    enum AccountStatus {
+        PENDING
+        ACTIVE
+        SUSPENDED
+        REMOVED
+    }
+
+    enum UserType {
+        VISITOR
+        STUDENT
+        PROFESSIONAL
+        NATIONAL_LEADER
+    }
+
+    enum MembershipRequestStatus {
+        PENDING
+        APPROVED
+        REJECTED
+        CANCELLED
+    }
+
+    enum Gender {
+        MALE
+        FEMALE
+    }
+
+    UserAccount *-- "1" UserProfile
+    UserAccount o-- "0..*" MembershipRequest
+    UserAccount --> AccountStatus
+    UserAccount --> UserType
+    UserAccount --> PartyRef
+    MembershipRequest --> MembershipRequestStatus
+    UserProfile --> Gender
+}
+
+@enduml

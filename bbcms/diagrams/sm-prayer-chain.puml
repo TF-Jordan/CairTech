@@ -1,0 +1,30 @@
+@startuml sm-prayer-chain
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — PrayerChain
+
+[*] --> DRAFT : create(title, dateStart,\n  dateEnd, slotDuration)
+
+DRAFT --> ACTIVE : start()\n[slots générés,\n intercesseurs notifiés]
+DRAFT --> CLOSED : cancel()
+
+ACTIVE --> CLOSED : close()\n[manuel ou cron quand\n dateEnd dépassée]
+
+CLOSED --> [*]
+
+note right of ACTIVE
+  Les intercesseurs couvrent
+  les PrayerSlot (covered=true).
+  Un slot non couvert reste
+  disponible jusqu'à dateEnd.
+end note
+
+note right of CLOSED
+  Les statistiques de couverture
+  (% slots couverts) sont gelées.
+  Le rapport de la chaîne reste
+  consultable.
+end note
+
+@enduml

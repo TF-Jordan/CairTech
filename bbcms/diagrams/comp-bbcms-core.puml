@@ -1,0 +1,215 @@
+@startuml comp-bbcms-core
+!theme plain
+skinparam componentStyle rectangle
+
+title Diagramme de composants — bbcms-core (architecture interne)
+
+package "bbcms-core" #E8EAF6 {
+
+    package "adapter/in/web" #C5CAE9 {
+        component [UserAccountController] as ctrlUser
+        component [BibleClubController] as ctrlBbc
+        component [LevelController] as ctrlLvl
+        component [MembershipController] as ctrlMem
+        component [MeetingController] as ctrlMeet
+        component [EventController] as ctrlEvt
+        component [AttendanceController] as ctrlAtt
+        component [EvangelismController] as ctrlEvg
+        component [DiscipleshipController] as ctrlDisc
+        component [IntercessionController] as ctrlInt
+        component [FinancialContribController] as ctrlFin
+        component [PublicationController] as ctrlPub
+        component [DTO / Mapper] as dto
+    }
+
+    package "adapter/in/mobile" #C5CAE9 {
+        component [MobileSyncController\n(REST + WebSocket)] as ctrlSync
+    }
+
+    package "adapter/in/scheduler" #C5CAE9 {
+        component [FaithfulnessScheduler\n(Quartz @Scheduled)] as schedFaith
+        component [InactivityScheduler\n(removal)] as schedInact
+        component [BackupScheduler\n(yearly reset)] as schedBackup
+    }
+
+    package "application/service" #A5D6A7 {
+        component [UserAccountService] as svcUser
+        component [BibleClubService] as svcBbc
+        component [MembershipService] as svcMem
+        component [MeetingService] as svcMeet
+        component [EventService] as svcEvt
+        component [AttendanceService] as svcAtt
+        component [FaithfulnessEngine] as engineFaith
+        component [EvangelismService] as svcEvg
+        component [DiscipleshipService] as svcDisc
+        component [IntercessionService] as svcInt
+        component [FinancialContribService] as svcFin
+        component [PublicationService] as svcPub
+        component [ResetService] as svcReset
+    }
+
+    package "application/port/in" #81C784 {
+        interface "ManageUserAccountUseCase" as ucUser
+        interface "ManageBibleClubUseCase" as ucBbc
+        interface "ManageMembershipUseCase" as ucMem
+        interface "ManageMeetingUseCase" as ucMeet
+        interface "ManageEventUseCase" as ucEvt
+        interface "RecordAttendanceUseCase" as ucAtt
+        interface "ManageEvangelismUseCase" as ucEvg
+        interface "ManageDiscipleshipUseCase" as ucDisc
+        interface "ManageIntercessionUseCase" as ucInt
+        interface "ManageFinancialContribUseCase" as ucFin
+        interface "PublishDailyVerseUseCase" as ucPub
+        interface "ResetBibleClubUseCase" as ucReset
+        interface "ComputeFaithfulnessUseCase" as ucFaith
+    }
+
+    package "application/port/out" #EF9A9A {
+        interface "UserAccountRepository" as repoUser
+        interface "BibleClubRepository" as repoBbc
+        interface "LevelRepository" as repoLvl
+        interface "MemberRepository" as repoMem
+        interface "MeetingRepository" as repoMeet
+        interface "EventRepository" as repoEvt
+        interface "AttendanceRepository" as repoAtt
+        interface "EvangelismRepository" as repoEvg
+        interface "DiscipleshipRepository" as repoDisc
+        interface "PrayerChainRepository" as repoPray
+        interface "FinancialContribRepository" as repoFin
+        interface "DailyVersePublicationRepository" as repoPub
+        interface "ActorPort" as actorPort
+        interface "NotificationPort" as notifPort
+        interface "SettingsPort" as settingsPort
+        interface "FilePort" as filePort
+        interface "LocalSyncPort" as localPort
+    }
+
+    package "domain/" #FFF9C4 {
+        component [UserAccount\nMembershipRequest] as domUser
+        component [BibleClub\nLevel\nLeadershipPosition] as domBbc
+        component [Member\nStudent\nProfessional\nMentor\nNationalLeader\nVisitor] as domPeople
+        component [Meeting\nMeetingPresence\nDepartmentalMeeting] as domMeet
+        component [Event\nEventParticipation] as domEvt
+        component [AttendanceScore\nFaithfulnessRecord] as domAtt
+        component [EvangelismProgram\nEvangelismRecord] as domEvg
+        component [DiscipleshipRecord\nDiscipleLink] as domDisc
+        component [PrayerChain\nPrayerSlot] as domInt
+        component [FinancialContribution\nContributionLine] as domFin
+        component [DailyVersePublication] as domPub
+    }
+
+    package "adapter/out/persistence" #FFCDD2 {
+        component [R2DBC Implementations\n(Repository adapters online)] as r2dbc
+        component [SQLite/Room Implementations\n(Repository adapters offline)] as room
+    }
+
+    package "adapter/out/integration" #FFCDD2 {
+        component [ActorAdapter] as adActor
+        component [NotificationAdapter] as adNotif
+        component [SettingsAdapter] as adSettings
+        component [FileAdapter] as adFile
+    }
+
+    package "adapter/out/messaging" #FFCDD2 {
+        component [BbcmsEventConsumer\n(Kafka listener)] as kafkaConsumer
+    }
+
+    package "config/" #ECEFF1 {
+        component [BbcmsCoreConfiguration\nBbcmsPermissionRegistrar\nBbcmsLiquibaseConfig] as config
+    }
+}
+
+' Wiring (web → use cases → services)
+ctrlUser -down-> ucUser
+ctrlBbc -down-> ucBbc
+ctrlMem -down-> ucMem
+ctrlMeet -down-> ucMeet
+ctrlEvt -down-> ucEvt
+ctrlAtt -down-> ucAtt
+ctrlEvg -down-> ucEvg
+ctrlDisc -down-> ucDisc
+ctrlInt -down-> ucInt
+ctrlFin -down-> ucFin
+ctrlPub -down-> ucPub
+
+schedFaith -down-> ucFaith
+schedInact -down-> ucMem
+schedBackup -down-> ucReset
+
+ucUser -down-> svcUser
+ucBbc -down-> svcBbc
+ucMem -down-> svcMem
+ucMeet -down-> svcMeet
+ucEvt -down-> svcEvt
+ucAtt -down-> svcAtt
+ucEvg -down-> svcEvg
+ucDisc -down-> svcDisc
+ucInt -down-> svcInt
+ucFin -down-> svcFin
+ucPub -down-> svcPub
+ucReset -down-> svcReset
+ucFaith -down-> engineFaith
+
+svcAtt -right-> engineFaith
+
+' Service → domain
+svcUser .down.> domUser
+svcBbc .down.> domBbc
+svcMem .down.> domPeople
+svcMeet .down.> domMeet
+svcEvt .down.> domEvt
+svcAtt .down.> domAtt
+svcEvg .down.> domEvg
+svcDisc .down.> domDisc
+svcInt .down.> domInt
+svcFin .down.> domFin
+svcPub .down.> domPub
+
+' Service → repositories
+svcUser -down-> repoUser
+svcBbc -down-> repoBbc
+svcBbc -down-> repoLvl
+svcMem -down-> repoMem
+svcMeet -down-> repoMeet
+svcAtt -down-> repoAtt
+svcEvt -down-> repoEvt
+svcEvg -down-> repoEvg
+svcDisc -down-> repoDisc
+svcInt -down-> repoPray
+svcFin -down-> repoFin
+svcPub -down-> repoPub
+
+' Service → ports out
+svcUser -down-> actorPort
+svcMeet -down-> notifPort
+svcEvt -down-> notifPort
+svcMeet -down-> filePort
+svcBbc -down-> settingsPort
+svcReset -down-> localPort
+
+' repositories → adapters out
+repoUser -down-> r2dbc
+repoBbc -down-> r2dbc
+repoLvl -down-> r2dbc
+repoMem -down-> r2dbc
+repoMeet -down-> r2dbc
+repoEvt -down-> r2dbc
+repoAtt -down-> r2dbc
+repoEvg -down-> r2dbc
+repoDisc -down-> r2dbc
+repoPray -down-> r2dbc
+repoFin -down-> r2dbc
+repoPub -down-> r2dbc
+
+repoUser -down-> room
+repoMem -down-> room
+repoMeet -down-> room
+
+actorPort -down-> adActor
+notifPort -down-> adNotif
+settingsPort -down-> adSettings
+filePort -down-> adFile
+
+ctrlSync -down-> ucMem
+
+@enduml

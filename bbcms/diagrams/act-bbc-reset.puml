@@ -1,0 +1,57 @@
+@startuml act-bbc-reset
+!theme plain
+skinparam activityFontSize 11
+
+title Diagramme d'activité — Réinitialisation annuelle d'un Bible Club
+
+|Leader National CHF|
+start
+:Sélectionne un Bible Club\nà réinitialiser;
+:Choisit l'année académique\nà clôturer;
+:Définit les règles de transfert\n(L1 → L2, L7 → archivés…);
+:Confirme la réinitialisation;
+
+|bbcms-core|
+:Vérifie les droits\n(Leader National uniquement);
+if (Autorisé ?) then (non)
+    :HTTP 403;
+    |Leader National CHF|
+    :Erreur affichée;
+    stop
+else (oui)
+endif
+
+:bbc.status = UNDER_RESET;
+
+partition "1. Génération du snapshot annuel" {
+    :Compter membres / fidèles;
+    :Compter réunions tenues;
+    :Agréger statistiques\nd'évangélisation;
+    :Générer un PDF résumé;
+    :Stocker l'archive via file-core;
+    :Persister BibleClubResetSnapshot;
+}
+
+partition "2. Application des règles de transfert" {
+    while (membre actif suivant) is (oui)
+        if (graduation prévue ?) then (oui)
+            :Member.status = TRANSFERRED;
+        else (non)
+            :Transférer member\nvers le niveau cible;
+        endif
+    endwhile (non)
+}
+
+partition "3. Reset des scores" {
+    :AttendanceScore.score = 0\nfaithful = false\nyear ← year+1;
+}
+
+:bbc.status = ACTIVE\n(année académique = year+1);
+:Publier événement BBC_RESET;
+:Notifier les leaders BBC\net les membres concernés;
+
+|Leader National CHF|
+:Consulte le rapport\nd'archive (téléchargeable)\net la nouvelle année;
+stop
+
+@enduml

@@ -1,0 +1,83 @@
+@startuml ds-bbcms-03-meeting-record
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-03 — Enregistrement de la présence et clôture d'une réunion
+
+actor "Leader" as leader
+participant "WebController\n<<adapter/in>>" as ctrl
+participant "MeetingService\n<<application/service>>" as svc
+participant "AttendanceService\n<<application/service>>" as svcAtt
+participant "FaithfulnessEngine" as engine
+participant "MeetingRepository" as repoMeet
+participant "AttendanceRepository" as repoAtt
+participant "MemberRepository" as repoMem
+participant "FilePort\n<<port/out>>" as filePort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+leader -> ctrl : POST /api/v1/bbcms/meetings/{id}/record\n{\n  startTime, endTime,\n  presents: [{memberId|visitorId, role}],\n  visitors: [...],\n  nbBelievers, summary,\n  pictures: [files]\n}
+activate ctrl
+
+ctrl -> svc : recordMeeting(request)
+activate svc
+
+svc -> repoMeet : findById(meetingId)
+repoMeet --> svc : Meeting{status=PLANNED|ONGOING}
+
+svc -> svc : Meeting.start() / end()\n(transitions d'état)
+
+== Vérification du nombre maximum de photos ==
+
+svc -> svc : if pictures.size > meeting.maxPictures\n→ ApiErrorResponse 400
+
+svc -> filePort : storeAll(pictures)
+activate filePort
+filePort --> svc : List<UUID> fileIds
+deactivate filePort
+
+svc -> svc : meeting.recordPresence(memberIds)\nmeeting.addPicture(fileIds)\nmeeting.summary = ...\nmeeting.nbBelievers = ...\nmeeting.status = RECORDED
+
+svc -> repoMeet : save(meeting)
+repoMeet -> db : UPDATE bbcms_meeting + INSERT bbcms_meeting_presence + INSERT bbcms_meeting_picture
+db --> repoMeet : OK
+
+== Mise à jour du score de participation ==
+
+svc -> svcAtt : updateAttendance(meeting, presents)
+activate svcAtt
+
+loop pour chaque présent (membre)
+    svcAtt -> repoAtt : findByMemberAndYear(memberId, year)
+    repoAtt --> svcAtt : AttendanceScore (ou null)
+    svcAtt -> svcAtt : score.increment(meetingId, source)
+    svcAtt -> repoAtt : save(score)
+end
+
+== Recalcul de la fidélité (asynchrone via cron, optionnel ici) ==
+
+svcAtt -> repoMem : findEligibleByMeeting(meeting)
+repoMem --> svcAtt : List<Member>
+
+svcAtt -> engine : recompute(scores, eligibleByMember, threshold)
+activate engine
+note right of engine
+  P% = score / totalEligible × 100
+  faithful = P% >= seuil (ex 50%)
+  Le seuil est lu via settings-core.
+end note
+engine --> svcAtt : updated AttendanceScores
+deactivate engine
+
+svcAtt -> repoAtt : saveAll(updated)
+deactivate svcAtt
+
+svc -> outbox : insertOutboxEvent(MEETING_RECORDED,\n  {meetingId, type, nbPresent,\n   nbBelievers})
+outbox -> db : INSERT kernel.outbox_event
+
+svc --> ctrl : Meeting{status=RECORDED, nbPresent, ...}
+deactivate svc
+ctrl --> leader : HTTP 200 — MeetingRecordedResponse
+deactivate ctrl
+
+@enduml

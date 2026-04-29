@@ -1,0 +1,32 @@
+@startuml sm-financial-contribution
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — FinancialContribution
+
+[*] --> OPEN : create(title, objective,\n  dateOpen, dateClose)
+
+OPEN --> CLOSED : close()\n[dateClose atteinte\n ou clôture manuelle]
+OPEN --> CANCELLED : cancel(reason)
+
+CLOSED --> [*]
+CANCELLED --> [*]
+
+note right of OPEN
+  Le Leader Financier saisit
+  les ContributionLine.
+  totalContributed est
+  recalculé à chaque ligne ;
+  une notification est envoyée
+  aux leaders quand
+  percentageReached >= 100 %.
+end note
+
+note right of CLOSED
+  Aucune nouvelle ligne ne peut
+  être ajoutée. Le rapport final
+  (% atteint, liste des donateurs)
+  reste consultable.
+end note
+
+@enduml

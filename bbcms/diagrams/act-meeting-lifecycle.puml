@@ -1,0 +1,73 @@
+@startuml act-meeting-lifecycle
+!theme plain
+skinparam activityFontSize 11
+
+title Diagramme d'activité — Cycle de vie d'une réunion
+
+|Leader|
+start
+:Accède à l'écran\n« Nouvelle réunion »;
+:Choisit le type de réunion\n(Classe / BBC / Jointe /\n Departementale / Leaders…);
+
+if (Réunion jointe ?) then (oui)
+    :Sélectionne les niveaux\nou les BBC concernés;
+else (non)
+    :Réunion limitée à\nson scope (classe / BBC);
+endif
+
+:Renseigne titre, date/heure planifiée,\nsalle, professeur (si académique),\nnb max de photos;
+:Soumet la planification;
+
+|bbcms-core|
+:Vérifie les droits du leader\nsur ce scope;
+if (Autorisé ?) then (non)
+    :HTTP 403;
+    |Leader|
+    :Erreur affichée;
+    stop
+else (oui)
+endif
+
+:Persiste Meeting (status=PLANNED);
+:Détermine l'audience éligible;
+:Programme les notifications\nvia notification-core\n(rappel 24 h avant + alarme heure J);
+:Publie MEETING_PLANNED;
+
+|Membres éligibles|
+:Reçoivent la notification\nde planification;
+
+|notification-core|
+:À H-24h envoie rappel;
+:À H envoie alarme\n« la réunion commence »;
+
+|Leader|
+:Le jour J, ouvre la réunion\n(status = ONGOING);
+:Pendant la réunion, prend\n0..N photos (≤ maxPictures);
+
+:À la fin, saisit :\n• heures réelles,\n• présences (membres + visiteurs),\n• résumé de l'enseignement,\n• nombre de croyants;
+
+|bbcms-core|
+if (nb photos > maxPictures ?) then (oui)
+    :Erreur 400 — Trop de photos;
+    |Leader|
+    :Réduit le nombre;
+    detach
+else (non)
+endif
+
+:Stocke MeetingPresence,\nMeetingPicture, summary;
+:status = RECORDED;
+
+|bbcms-core|
+partition "Mise à jour participation" {
+    :Pour chaque membre présent,\n+1 sur AttendanceScore;
+    :Source = MeetingType\n(CLASS / BBC / JOINT…);
+}
+
+:Publie MEETING_RECORDED;
+
+|Leader|
+:Affiche le récapitulatif\n(nb présents, %, croyants);
+stop
+
+@enduml

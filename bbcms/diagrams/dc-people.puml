@@ -1,0 +1,137 @@
+@startuml dc-people
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+
+    class PartyRef {
+        - partyId : UUID
+        - partyType : String
+        - displayName : String
+    }
+}
+
+package "bbcms-core / domain — Personnes" #F5FFF5 {
+
+    abstract class Member extends BaseEntity {
+        - actorRef : PartyRef
+        - userAccountId : UUID
+        - firstNames : String
+        - nextNames : String
+        - dateOfBirth : LocalDate
+        - gender : Gender
+        - email : String
+        - phoneNumber : String
+        - dateBornAgain : LocalDate
+        - howBornAgain : String
+        - dateEntered : LocalDate
+        - pictureFileId : UUID
+        - status : MemberStatus
+        + leave() : void
+        + updateProfile() : void
+        + age() : int
+    }
+
+    class Student extends Member {
+        - bibleClubId : UUID
+        - levelId : UUID
+        - participationScore : int
+        - faithfulPercentage : BigDecimal
+        - departments : Set<Department>
+        - leadershipPositions : Set<LeadershipPosition>
+        + transferLevel(newLevelId) : void
+        + addDepartment(d) : void
+        + isFaithful(threshold) : boolean
+    }
+
+    class Professional extends Member {
+        - profession : String
+        - position : ProfessionalPosition
+        - assignedBibleClubs : Set<UUID>
+        + becomeMentor(bbcIds) : void
+    }
+
+    class Mentor extends Professional {
+        - assignedBibleClubs : Set<UUID>
+        + supervise(bbcId) : void
+        + canManage(bbcId) : boolean
+    }
+
+    class NationalLeader extends Member {
+        - profession : String
+        - position : LeadershipPosition
+        + assignNationalRole(p) : void
+    }
+
+    class Visitor extends BaseEntity {
+        - firstNames : String
+        - nextNames : String
+        - phoneNumber : String
+        - eventOrMeetingId : UUID
+        - visitDate : LocalDate
+        + linkToMeeting(meetingId) : void
+    }
+
+    enum MemberStatus {
+        ACTIVE
+        INACTIVE
+        REMOVED
+        TRANSFERRED
+    }
+
+    enum Gender {
+        MALE
+        FEMALE
+    }
+
+    enum ProfessionalPosition {
+        SIMPLE_PROFESSIONAL
+        MENTOR
+    }
+
+    enum Department {
+        INTERCESSOR
+        DISCIPLE_MAKER
+        CHARIS
+        DIVINE_SHAKERS
+        ACT_OF_CHRIST
+        ACADEMICS
+        MIGHTY_MEN_OF_VALOR
+        LADIES
+    }
+
+    enum LeadershipPosition {
+        BBC_PRESIDENT
+        BBC_VICE_PRESIDENT
+        INTERCESSORY_LEADER
+        EVANGELISM_DISCIPLESHIP_LEADER
+        ACADEMIC_LEADER
+        FINANCIAL_LEADER
+        CLASS_PRESIDENT
+        CLASS_VICE_PRESIDENT
+        DAILY_VERSE_LEADER
+        ' (raccourci — voir dc-organization pour la liste complète)
+    }
+
+    Member --> MemberStatus
+    Member --> Gender
+    Member --> PartyRef
+    Student --> Department
+    Student --> LeadershipPosition
+    Professional --> ProfessionalPosition
+    NationalLeader --> LeadershipPosition
+}
+
+@enduml

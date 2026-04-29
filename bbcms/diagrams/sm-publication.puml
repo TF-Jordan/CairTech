@@ -1,0 +1,36 @@
+@startuml sm-publication
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — Publication (Daily Verse / Special Announcement)
+
+[*] --> DRAFT : create(...)
+
+DRAFT --> SCHEDULED : schedule(publishDate)\n[date future]
+DRAFT --> PUBLISHED : publish()\n[publication immédiate]
+
+SCHEDULED --> PUBLISHED : trigger\n[cron à publishDate]
+SCHEDULED --> RETRACTED : retract()\n[avant publication]
+
+PUBLISHED --> RETRACTED : retract()\n[publication annulée]
+
+RETRACTED --> [*]
+PUBLISHED --> [*] : (lecture seule)
+
+note right of SCHEDULED
+  Le scheduler bbcms-core
+  bascule automatiquement
+  SCHEDULED → PUBLISHED
+  à publishDate et publie
+  l'événement
+  DAILY_VERSE_PUBLISHED.
+end note
+
+note right of RETRACTED
+  La publication est masquée
+  côté clients ; les notifications
+  push déjà envoyées ne sont
+  pas rappelées.
+end note
+
+@enduml

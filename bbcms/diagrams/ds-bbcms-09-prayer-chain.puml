@@ -1,0 +1,72 @@
+@startuml ds-bbcms-09-prayer-chain
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-09 — Création d'une chaîne de prière et couverture par un intercesseur
+
+actor "Leader d'intercession" as intLeader
+actor "Intercesseur" as intercessor
+participant "WebController" as ctrl
+participant "IntercessionService" as svc
+participant "PrayerChainRepository" as repoPc
+participant "MemberRepository" as repoMem
+participant "NotificationPort" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+== Phase 1 : Création et planification de la chaîne ==
+
+intLeader -> ctrl : POST /api/v1/bbcms/prayer-chains\n{ title, bibleClubId, dateStart, dateEnd,\n  slotDurationMinutes }
+activate ctrl
+
+ctrl -> svc : createChain(request)
+activate svc
+
+svc -> svc : PrayerChain.start()\n+ generateEmptySlots(...)
+svc -> repoPc : save(chain + slots)
+repoPc -> db : INSERT bbcms_prayer_chain\n+ INSERT bbcms_prayer_slot (covered=false)
+
+svc -> repoMem : findIntercessorsByBbc(bibleClubId)
+repoMem --> svc : List<Member>
+
+svc -> notifPort : notifyIntercessors(\n  chainId, audience, "Couvrez un créneau")
+
+svc -> outbox : insertOutboxEvent(PRAYER_CHAIN_OPENED,\n  {chainId, bibleClubId})
+
+svc --> ctrl : PrayerChain{id, slots[]}
+deactivate svc
+ctrl --> intLeader : HTTP 201
+deactivate ctrl
+
+== Phase 2 : Un intercesseur réserve un créneau ==
+
+intercessor -> ctrl : POST /api/v1/bbcms/prayer-slots/{id}/cover
+activate ctrl
+ctrl -> svc : coverSlot(slotId, intercessorMemberId)
+activate svc
+
+svc -> repoPc : findSlotById(slotId)
+repoPc --> svc : PrayerSlot{covered=false}
+
+svc -> svc : slot.cover()\n(covered=true,\n intercessorMemberId set)
+
+svc -> repoPc : save(slot)
+repoPc -> db : UPDATE bbcms_prayer_slot
+
+svc -> outbox : insertOutboxEvent(PRAYER_SLOT_COVERED,\n  {slotId, chainId, memberId})
+
+svc --> ctrl : PrayerSlot{covered=true}
+deactivate svc
+ctrl --> intercessor : HTTP 200
+deactivate ctrl
+
+== Phase 3 : Clôture automatique en fin de période ==
+
+note over svc, repoPc
+  Le scheduler de bbcms-core ferme
+  automatiquement la chaîne quand
+  dateEnd est dépassée et publie
+  PRAYER_CHAIN_CLOSED.
+end note
+
+@enduml

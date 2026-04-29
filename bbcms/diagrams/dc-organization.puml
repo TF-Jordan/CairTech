@@ -1,0 +1,126 @@
+@startuml dc-organization
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Bible Clubs & Niveaux" #FFF5F5 {
+
+    class BibleClub extends BaseEntity {
+        - name : String
+        - profile : String
+        - schoolName : String
+        - goalNbFaithful : int
+        - dateCreated : LocalDate
+        - status : BibleClubStatus
+        - presidentMemberId : UUID
+        - vicePresidentMemberId : UUID
+        - secretaryMemberId : UUID
+        + assignPresident(memberId) : void
+        + setYearGoal(nb) : void
+        + countMembers() : int
+        + countFaithful() : int
+        + percentageRealized() : BigDecimal
+        + reset(year) : ResetSnapshot
+        + archive() : void
+    }
+
+    class Level extends BaseEntity {
+        - bibleClubId : UUID
+        - name : String
+        - profile : String
+        - type : LevelType
+        - presidentMemberId : UUID
+        - vicePresidentMemberId : UUID
+        + countMembers() : int
+        + countFaithful() : int
+        + transferTo(newLevelId, memberIds) : void
+    }
+
+    class LeadershipAssignment extends BaseEntity {
+        - memberOrLeaderId : UUID
+        - position : LeadershipPosition
+        - scopeBibleClubId : UUID
+        - scopeLevelId : UUID
+        - dateStart : LocalDate
+        - dateEnd : LocalDate
+        - active : boolean
+        + revoke() : void
+    }
+
+    class BibleClubResetSnapshot <<Value Object>> {
+        - year : int
+        - nbMembersBefore : int
+        - nbFaithfulBefore : int
+        - percentageReached : BigDecimal
+        - archivedAt : Instant
+        - archiveFileId : UUID
+    }
+
+    enum BibleClubStatus {
+        ACTIVE
+        ARCHIVED
+        UNDER_RESET
+    }
+
+    enum LevelType {
+        L1
+        L2
+        L3
+        L4
+        L5
+        L6
+        L7
+    }
+
+    enum LeadershipPosition {
+        ' --- National (CHF) ---
+        CHF_PRESIDENT
+        CHF_VICE_PRESIDENT_STUDENTS
+        CHF_VICE_PRESIDENT_PROFESSIONALS
+        BOARD_OF_TRUSTEES
+        CHF_SECRETARY_GENERAL
+        ' --- BBC ---
+        BBC_PRESIDENT
+        BBC_VICE_PRESIDENT
+        BBC_SECRETARY
+        INTERCESSORY_LEADER
+        EVANGELISM_DISCIPLESHIP_LEADER
+        ACADEMIC_LEADER
+        FINANCIAL_LEADER
+        COMMUNICATION_LEADER
+        MIGHTY_MEN_LEADER
+        LADIES_LEADER
+        WELFARE_LEADER
+        ACT_OF_CHRIST_LEADER
+        CHARIS_LEADER
+        DIVINE_SHAKER_LEADER
+        DAILY_VERSE_LEADER
+        ' --- Class ---
+        CLASS_PRESIDENT
+        CLASS_VICE_PRESIDENT
+        ' --- Mentor ---
+        MENTOR
+    }
+
+    BibleClub *-- "0..*" Level
+    BibleClub --> BibleClubStatus
+    BibleClub o-- "0..*" BibleClubResetSnapshot : history
+    Level --> LevelType
+    LeadershipAssignment --> LeadershipPosition
+}
+
+@enduml

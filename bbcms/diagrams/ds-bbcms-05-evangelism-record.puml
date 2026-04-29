@@ -1,0 +1,73 @@
+@startuml ds-bbcms-05-evangelism-record
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-05 — Création d'une campagne d'évangélisation et saisie d'un compte rendu
+
+actor "Leader Évangélisation\n& Discipulat" as evgLeader
+participant "WebController" as ctrl
+participant "EvangelismService" as svc
+participant "EvangelismRepository" as repoEvg
+participant "MemberRepository" as repoMem
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+== Phase 1 : Création de la campagne ==
+
+evgLeader -> ctrl : POST /api/v1/bbcms/evangelism-programs\n{\n  title, type: INTERNAL_BBC,\n  bibleClubsConcerned, dates,\n  objectiveBelievers\n}
+activate ctrl
+
+ctrl -> svc : createProgram(request)
+activate svc
+
+svc -> svc : EvangelismProgram.plan()\n(status = ONGOING)
+svc -> repoEvg : save(program)
+repoEvg -> db : INSERT bbcms_evangelism_program\n+ INSERT bbcms_evangelism_program_dates\n+ INSERT bbcms_evangelism_program_bbc
+db --> repoEvg : OK
+
+svc -> outbox : insertOutboxEvent(EVANGELISM_PROGRAM_CREATED,\n  {programId, type, objectiveBelievers})
+
+svc --> ctrl : EvangelismProgram{id, status=ONGOING}
+deactivate svc
+ctrl --> evgLeader : HTTP 201
+deactivate ctrl
+
+== Phase 2 : Saisie d'un compte rendu journalier ==
+
+evgLeader -> ctrl : POST /api/v1/bbcms/evangelism-records\n{\n  programId, date,\n  participantMemberIds,\n  nbPreached, nbBelieved,\n  nbEncouraged, nbTractsShared,\n  savedContacts, notes\n}
+activate ctrl
+
+ctrl -> svc : addRecord(programId, request)
+activate svc
+
+svc -> repoEvg : findProgramById(programId)
+repoEvg --> svc : EvangelismProgram
+
+svc -> svc : record.validateInProgramDates()\n(date ∈ program.dates)
+
+note right of svc
+  Si la date n'appartient pas aux
+  dates planifiées du programme,
+  → ApiErrorResponse 400 (DS-V-04).
+end note
+
+svc -> repoMem : findActiveByIds(participantMemberIds)
+repoMem --> svc : List<Member>
+
+svc -> repoEvg : save(EvangelismRecord)
+repoEvg -> db : INSERT bbcms_evangelism_record\n+ INSERT bbcms_evangelism_record_participants
+db --> repoEvg : OK
+
+svc -> svc : program.totalPreached += record.nbPreached\nprogram.totalSaved += record.nbBelieved\nprogram.totalEncouraged += record.nbEncouraged
+
+svc -> repoEvg : save(program)
+repoEvg -> db : UPDATE bbcms_evangelism_program
+
+svc -> outbox : insertOutboxEvent(EVANGELISM_RECORDED,\n  {recordId, programId, nbBelieved})
+
+svc --> ctrl : EvangelismRecord{id} +\n  EvangelismProgram{percentageRealization}
+deactivate svc
+ctrl --> evgLeader : HTTP 201 — EvangelismRecordResponse
+deactivate ctrl
+
+@enduml

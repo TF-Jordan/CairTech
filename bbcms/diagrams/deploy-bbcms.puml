@@ -1,0 +1,80 @@
+@startuml deploy-bbcms
+!theme plain
+skinparam nodeStyle rectangle
+
+title Diagramme de déploiement — bbcms-core sur la plateforme CHF-OPS
+
+node "Client mobile" as clientMobile {
+    component [App Android / iOS\n(Flutter / React Native)] as mobileApp
+    database "SQLite local\n(Room)\nvue propriétaire" as sqlite
+    mobileApp -down-> sqlite : R/W offline
+}
+
+node "Client Desktop" as clientDesktop {
+    component [App Desktop\n(Electron / .NET)] as desktopApp
+    database "SQLite local\n(données du leader)" as sqliteD
+    desktopApp -down-> sqliteD : R/W offline
+}
+
+node "Client Web" as clientWeb {
+    component [Navigateur\n(Angular / React)] as browser
+}
+
+node "Load Balancer" as lb {
+    component [Nginx / Traefik\n(HTTPS, WebSocket)] as proxy
+}
+
+node "Application Server" as appServer {
+    node "JVM — Spring Boot (WebFlux)" as jvm {
+        component [kernel-core\n(Security filter,\nTenant routing,\nOutbox scheduler)] as kernel
+        component [auth-core] as authC
+        component [roles-core] as rolesC
+        component [actor-core] as actorC
+        component [organization-core] as orgC
+        component [settings-core] as settC
+        component [file-core] as fileC
+        component [notification-core] as notifC
+        component [**bbcms-core**] as bbcmsC #7986CB
+        component [common-core] as commonC
+    }
+}
+
+node "Message Broker" as broker {
+    component [Apache Kafka\nTopic: chf.events.business] as kafka
+}
+
+database "PostgreSQL" as pg {
+    storage "Schema: tenant_001" as s1
+    storage "Schema: tenant_002" as s2
+    storage "Schema: kernel\n(outbox_event, audit)" as sk
+}
+
+database "MinIO / S3" as minio {
+    storage "Bucket: bbcms-media\n(photos meeting,\nphotos events,\nattestations,\ndaily verse images)" as bucket
+}
+
+node "Push & E-mail providers" as pushSvc {
+    component [Firebase FCM\nAPNS] as fcm
+    component [SMTP\n(Sendgrid)] as smtp
+}
+
+mobileApp -down-> proxy : HTTPS / WSS
+desktopApp -down-> proxy : HTTPS / WSS
+browser -down-> proxy : HTTPS
+
+proxy -down-> jvm : HTTP (reverse proxy)
+
+kernel -down-> pg : R2DBC\n(tenant routing)
+kernel -right-> kafka : Outbox relay
+
+bbcmsC -down-> pg : R2DBC
+bbcmsC -right-> kafka : Events (via outbox)
+bbcmsC -down-> minio : via file-core
+
+notifC -down-> fcm : push notif\n(meeting / event reminders)
+notifC -down-> smtp : e-mail\n(activation, reset, daily verse)
+
+kafka -down-> notifC : consume MEETING_PLANNED\nconsume EVENT_PLANNED
+kafka -down-> bbcmsC : consume NOTIFICATION_DELIVERED\nconsume ACTOR_UPDATED
+
+@enduml

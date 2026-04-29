@@ -1,0 +1,198 @@
+@startuml uc-bbcms-global
+!theme plain
+left to right direction
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+
+actor "Visiteur / Utilisateur\n(non encore membre)" as visitor
+actor "Membre simple\n(Étudiant)" as member
+actor "Professionnel" as pro
+actor "Mentor" as mentor
+actor "Leader de classe\n(Président / VP)" as classLeader
+actor "Leader BBC\n(Président / VP / SG)" as bbcLeader
+actor "Leader d'intercession" as intercessor
+actor "Disciple Maker" as discipleMaker
+actor "Leader Évangélisation\n& Discipulat" as evgLeader
+actor "Leader Financier" as finLeader
+actor "Leader Daily Verse" as dvLeader
+actor "Leader National CHF\n(BOT / Président / VP / SG)" as nationalLeader
+
+rectangle "bbcms-core" {
+
+    package "Comptes & Inscriptions" {
+        usecase "Créer un compte\nutilisateur" as UC_ACC_CREATE
+        usecase "Soumettre une demande\nd'adhésion (membre / pro)" as UC_REG_REQUEST
+        usecase "Approuver / Rejeter\nune demande d'adhésion" as UC_REG_APPROVE
+        usecase "Affecter un membre\nà un BBC + niveau" as UC_REG_ASSIGN
+    }
+
+    package "Bible Clubs & Niveaux" {
+        usecase "Créer / Éditer / Supprimer\nun Bible Club" as UC_BBC_MANAGE
+        usecase "Définir l'objectif annuel\ndu BBC (nb fidèles)" as UC_BBC_GOAL
+        usecase "Créer / Éditer / Supprimer\nun niveau (L1..L7)" as UC_LVL_MANAGE
+        usecase "Assigner les leaders\ninternes du BBC" as UC_BBC_ASSIGN_LEADER
+        usecase "Réinitialiser un BBC\nen début d'année" as UC_BBC_RESET
+        usecase "Transférer un membre\nde niveau / BBC" as UC_MEM_TRANSFER
+    }
+
+    package "Personnes" {
+        usecase "Consulter / Éditer\nson profil" as UC_PROFILE
+        usecase "Quitter un BBC /\nsupprimer son compte" as UC_LEAVE_BBC
+        usecase "Gérer les professionnels\n(ajout / retrait)" as UC_PRO_MANAGE
+        usecase "Gérer les mentors\net leur affectation BBC" as UC_MENTOR_MANAGE
+        usecase "Gérer les leaders\nnationaux CHF" as UC_NAT_LEADER
+    }
+
+    package "Réunions & Assemblées" {
+        usecase "Planifier une réunion\n(classe, BBC, jointe…)" as UC_MEET_PLAN
+        usecase "Notifier les membres\néligibles" as UC_MEET_NOTIFY
+        usecase "Enregistrer la feuille\nde présence" as UC_MEET_RECORD
+        usecase "Saisir les détails\n(résumé, photos, croyants)" as UC_MEET_DETAIL
+        usecase "Consulter une réunion\n(et participations)" as UC_MEET_VIEW
+    }
+
+    package "Événements nationaux" {
+        usecase "Planifier un événement\n(Congrès, Summit…)" as UC_EVT_PLAN
+        usecase "S'inscrire à un événement" as UC_EVT_ENROLL
+        usecase "Enregistrer la présence\nà l'événement" as UC_EVT_PRESENCE
+    }
+
+    package "Évangélisation" {
+        usecase "Créer une campagne\nd'évangélisation" as UC_EVG_PROGRAM
+        usecase "Saisir un compte rendu\nd'évangélisation" as UC_EVG_RECORD
+        usecase "Marquer les nouveaux\ncroyants" as UC_EVG_BELIEVERS
+    }
+
+    package "Discipulat" {
+        usecase "Affecter un disciple\nà un disciple maker" as UC_DISC_ASSIGN
+        usecase "Saisir un compte rendu\nde discipulat" as UC_DISC_RECORD
+    }
+
+    package "Intercession" {
+        usecase "Organiser une réunion\nd'intercession / retraite" as UC_INT_MEET
+        usecase "Gérer la chaîne de prière\n(slots et intercesseurs)" as UC_INT_CHAIN
+        usecase "Ajouter / Retirer\nun intercesseur" as UC_INT_MEMBER
+    }
+
+    package "Finances" {
+        usecase "Créer une contribution\nspécifique (objectif)" as UC_FIN_CREATE
+        usecase "Enregistrer un versement\nd'un membre / non-membre" as UC_FIN_RECORD
+        usecase "Consulter le total\net % d'objectif" as UC_FIN_REPORT
+    }
+
+    package "Fidélité & Participation" {
+        usecase "Calculer le score\nde participation (cron)" as UC_FAITH_COMPUTE
+        usecase "Consulter les fidèles /\nles non-fidèles" as UC_FAITH_LIST
+        usecase "Retirer automatiquement\nun membre absent longtemps" as UC_FAITH_REMOVE
+    }
+
+    package "Publications" {
+        usecase "Publier un BBC\nDaily Verse" as UC_PUB_DV
+        usecase "Publier une info\nspéciale (anniv, congrès)" as UC_PUB_INFO
+    }
+
+    package "Reporting & Tableau de bord" {
+        usecase "Consulter un tableau\nde bord temps réel\nd'un BBC" as UC_DASH_BBC
+        usecase "Consulter le pilotage\nnational CHF" as UC_DASH_NATIONAL
+    }
+}
+
+' --- Visiteur ---
+visitor --> UC_ACC_CREATE
+visitor --> UC_REG_REQUEST
+
+' --- Membre simple ---
+member --> UC_PROFILE
+member --> UC_LEAVE_BBC
+member --> UC_MEET_VIEW
+member --> UC_EVT_ENROLL
+member --> UC_FAITH_LIST
+
+' --- Professionnel ---
+pro --> UC_PROFILE
+pro --> UC_LEAVE_BBC
+pro --> UC_EVT_ENROLL
+pro --> UC_MEET_VIEW
+
+' --- Mentor ---
+mentor --> UC_MEET_PLAN
+mentor --> UC_MEET_RECORD
+mentor --> UC_MEET_DETAIL
+mentor --> UC_DASH_BBC
+
+' --- Leader de classe ---
+classLeader --> UC_MEET_PLAN
+classLeader --> UC_MEET_RECORD
+classLeader --> UC_MEET_DETAIL
+classLeader --> UC_REG_ASSIGN
+
+' --- Leader BBC ---
+bbcLeader --> UC_BBC_GOAL
+bbcLeader --> UC_LVL_MANAGE
+bbcLeader --> UC_BBC_ASSIGN_LEADER
+bbcLeader --> UC_REG_APPROVE
+bbcLeader --> UC_REG_ASSIGN
+bbcLeader --> UC_MEM_TRANSFER
+bbcLeader --> UC_MEET_PLAN
+bbcLeader --> UC_DASH_BBC
+
+' --- Leader d'intercession ---
+intercessor --> UC_INT_MEET
+intercessor --> UC_INT_CHAIN
+intercessor --> UC_INT_MEMBER
+
+' --- Disciple Maker ---
+discipleMaker --> UC_DISC_RECORD
+
+' --- Leader Évangélisation ---
+evgLeader --> UC_EVG_PROGRAM
+evgLeader --> UC_EVG_RECORD
+evgLeader --> UC_EVG_BELIEVERS
+evgLeader --> UC_DISC_ASSIGN
+
+' --- Leader financier ---
+finLeader --> UC_FIN_CREATE
+finLeader --> UC_FIN_RECORD
+finLeader --> UC_FIN_REPORT
+
+' --- Leader Daily Verse ---
+dvLeader --> UC_PUB_DV
+
+' --- Leader National CHF ---
+nationalLeader --> UC_BBC_MANAGE
+nationalLeader --> UC_BBC_RESET
+nationalLeader --> UC_PRO_MANAGE
+nationalLeader --> UC_MENTOR_MANAGE
+nationalLeader --> UC_NAT_LEADER
+nationalLeader --> UC_EVT_PLAN
+nationalLeader --> UC_EVT_PRESENCE
+nationalLeader --> UC_PUB_INFO
+nationalLeader --> UC_DASH_NATIONAL
+
+' --- Includes / Extends ---
+UC_MEET_PLAN ..> UC_MEET_NOTIFY : <<include>>
+UC_MEET_RECORD ..> UC_MEET_DETAIL : <<include>>
+UC_REG_APPROVE ..> UC_REG_ASSIGN : <<include>>
+UC_FAITH_COMPUTE ..> UC_FAITH_REMOVE : <<extend>>\n[absences > seuil]
+
+' --- Acteurs externes (autres cores / systèmes) ---
+rectangle "actor-core" as ACT <<external>>
+rectangle "settings-core" as SET <<external>>
+rectangle "file-core" as FIL <<external>>
+rectangle "notification-core" as NOT <<external>>
+rectangle "roles-core" as ROL <<external>>
+
+UC_ACC_CREATE ..> ACT : <<port/out>>\nrésolution PartyRef
+UC_MEET_NOTIFY ..> NOT : <<port/out>>\npush / e-mail
+UC_BBC_GOAL ..> SET : <<port/out>>\nlecture seuils\n(faithfulness, max photos)
+UC_MEET_DETAIL ..> FIL : <<port/out>>\nstockage photos
+
+note bottom of ROL
+  roles-core gère toute
+  la logique RBAC.
+  bbcms-core annote ses
+  endpoints avec
+  @Secured("bbcms:...")
+end note
+
+@enduml

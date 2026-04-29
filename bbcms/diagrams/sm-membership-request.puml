@@ -1,0 +1,30 @@
+@startuml sm-membership-request
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — MembershipRequest
+
+[*] --> PENDING : submit(userAccount, type, bbcId, levelId)
+
+PENDING --> APPROVED : approve(by, bbcId, levelId)\n[Leader BBC ou National]
+PENDING --> REJECTED : reject(by, reason)
+PENDING --> CANCELLED : cancel()\n[par l'utilisateur]
+
+APPROVED --> [*] : Member créé\n+ MEMBER_ADDED
+REJECTED --> [*]
+CANCELLED --> [*]
+
+note right of PENDING
+  La demande reste consultable
+  par le leader compétent
+  (BBC pour Étudiant, National
+  pour Professionnel).
+end note
+
+note right of REJECTED
+  L'utilisateur peut soumettre
+  une nouvelle demande après
+  correction de ses données.
+end note
+
+@enduml

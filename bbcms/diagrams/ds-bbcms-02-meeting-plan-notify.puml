@@ -1,0 +1,80 @@
+@startuml ds-bbcms-02-meeting-plan-notify
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-02 — Planification d'une réunion et notification des éligibles
+
+actor "Leader\n(Classe / BBC / Mentor)" as leader
+participant "WebController\n<<adapter/in>>" as ctrl
+participant "MeetingService\n<<application/service>>" as svc
+participant "SettingsPort\n<<port/out>>" as settings
+participant "MeetingRepository\n<<port/out>>" as repoMeet
+participant "MemberRepository\n<<port/out>>" as repoMem
+participant "NotificationPort\n<<port/out>>" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent\n<<kernel-core>>" as outbox
+
+leader -> ctrl : POST /api/v1/bbcms/meetings\n{\n  type: CLASS_MEETING,\n  bibleClubId, levelId,\n  plannedDate, plannedStartTime,\n  title, summary?, maxPictures?\n}
+activate ctrl
+
+note right of ctrl
+  tenantId, organizationId, bibleClubId
+  proviennent du JWT (kernel-core).
+  Pour un Leader National ou Mentor,
+  bibleClubId / levelId peuvent être
+  passés explicitement.
+end note
+
+ctrl -> svc : planMeeting(request)
+activate svc
+
+svc -> settings : getMeetingDefaults(orgId, bibleClubId?)
+activate settings
+settings --> svc : MeetingDefaults {\n  maxPicturesDefault=20,\n  notifyChannels=[PUSH,EMAIL],\n  reminderHoursBefore=24\n}
+deactivate settings
+
+svc -> svc : Meeting.plan()\n(status = PLANNED)
+svc -> repoMeet : save(meeting)
+repoMeet -> db : INSERT INTO bbcms_meeting
+db --> repoMeet : OK
+
+== Détermination de l'audience selon le type ==
+
+alt type = CLASS_MEETING
+    svc -> repoMem : findActiveByLevel(levelId)
+    repoMem --> svc : List<Member>
+else type = JOINT_CLASS_MEETING
+    svc -> repoMem : findActiveByLevels(levelsConcerned)
+else type = JOINT_BBC_MEETING
+    svc -> repoMem : findActiveByBibleClubs(bibleClubsConcerned)
+else type = DEPARTMENTAL_MEETING
+    svc -> repoMem : findActiveByDepartment(\n  bibleClubId, department)
+else type = LEADERS_MEETING
+    svc -> repoMem : findActiveLeadersByBibleClub(bibleClubId)
+else autre
+    svc -> repoMem : findActiveByBibleClub(bibleClubId)
+end
+
+repoMem --> svc : audience
+
+svc -> notifPort : scheduleMeetingNotification(\n  meetingId, audience,\n  channels, reminderHoursBefore)
+notifPort --> svc : MeetingNotification{status=SCHEDULED}
+
+svc -> outbox : insertOutboxEvent(MEETING_PLANNED,\n  {meetingId, type, plannedDate,\n   audienceCount})
+outbox -> db : INSERT kernel.outbox_event
+
+note over outbox
+  L'événement MEETING_PLANNED est
+  consommé de manière asynchrone par
+  notification-core qui envoie effectivement
+  les push / e-mails à l'heure prévue
+  (DS-N-01).
+end note
+
+svc --> ctrl : Meeting{id, status=PLANNED,\n  audienceCount}
+deactivate svc
+
+ctrl --> leader : HTTP 201 — MeetingResponse
+deactivate ctrl
+
+@enduml

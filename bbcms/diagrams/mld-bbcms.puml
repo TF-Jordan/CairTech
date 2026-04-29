@@ -1,0 +1,576 @@
+@startuml mld-bbcms
+!theme plain
+skinparam linetype ortho
+
+title Modèle Logique de Données — bbcms-core (schéma tenant)
+
+entity "bbcms_user_account" as ua {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID <<FK kernel>>
+    * organization_id : UUID
+    agency_id : UUID
+    * actor_id : UUID <<FK actor-core>>
+    * email : VARCHAR(150) <<UNIQUE>>
+    * password_hash : VARCHAR(255)
+    phone : VARCHAR(20)
+    * status : VARCHAR(15)
+    * user_type : VARCHAR(20)
+    last_login_at : TIMESTAMPTZ
+    locale : VARCHAR(8)
+    --
+    first_names : VARCHAR(100)
+    next_names : VARCHAR(100)
+    date_of_birth : DATE
+    gender : VARCHAR(10)
+    date_born_again : DATE
+    how_born_again : TEXT
+    date_entered : DATE
+    picture_file_id : UUID
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_membership_request" as mreq {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * user_account_id : UUID <<FK>>
+    * requested_type : VARCHAR(20)
+    bible_club_id : UUID <<FK>>
+    level_id : UUID <<FK>>
+    profession : VARCHAR(150)
+    * status : VARCHAR(15)
+    decision_by : UUID
+    decision_at : TIMESTAMPTZ
+    decision_comment : TEXT
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_bible_club" as bbc {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * name : VARCHAR(150)
+    profile : TEXT
+    school_name : VARCHAR(150)
+    goal_nb_faithful : INT
+    date_created : DATE
+    * status : VARCHAR(15)
+    president_member_id : UUID
+    vice_president_member_id : UUID
+    secretary_member_id : UUID
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_level" as lvl {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * bible_club_id : UUID <<FK>>
+    * name : VARCHAR(50)
+    profile : TEXT
+    * type : VARCHAR(5)
+    president_member_id : UUID
+    vice_president_member_id : UUID
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_member" as mem {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    bible_club_id : UUID <<FK>>
+    level_id : UUID <<FK>>
+    user_account_id : UUID <<FK>>
+    * actor_id : UUID
+    * member_kind : VARCHAR(20) <<STUDENT/PROFESSIONAL/MENTOR/NATIONAL_LEADER>>
+    * first_names : VARCHAR(100)
+    * next_names : VARCHAR(100)
+    * gender : VARCHAR(10)
+    date_of_birth : DATE
+    email : VARCHAR(150)
+    phone_number : VARCHAR(20)
+    date_born_again : DATE
+    how_born_again : TEXT
+    date_entered : DATE
+    picture_file_id : UUID
+    profession : VARCHAR(150)
+    professional_position : VARCHAR(20)
+    participation_score : INT
+    faithful_percentage : NUMERIC(5,2)
+    * status : VARCHAR(15)
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_member_department" as md {
+    * **member_id** : UUID <<PK,FK>>
+    * **department** : VARCHAR(20) <<PK>>
+}
+
+entity "bbcms_leadership_assignment" as lass {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * member_id : UUID <<FK>>
+    * position : VARCHAR(40)
+    scope_bible_club_id : UUID <<FK>>
+    scope_level_id : UUID <<FK>>
+    * date_start : DATE
+    date_end : DATE
+    * active : BOOLEAN
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_mentor_assignment" as ment {
+    * **member_id** : UUID <<PK,FK>>
+    * **bible_club_id** : UUID <<PK,FK>>
+    * date_start : DATE
+    date_end : DATE
+}
+
+entity "bbcms_visitor" as vis {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * first_names : VARCHAR(100)
+    next_names : VARCHAR(100)
+    phone_number : VARCHAR(20)
+    event_or_meeting_id : UUID
+    visit_date : DATE
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_meeting" as meet {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    bible_club_id : UUID <<FK>>
+    level_id : UUID <<FK>>
+    department : VARCHAR(20)
+    * title : VARCHAR(200)
+    * type : VARCHAR(30)
+    * planned_date : DATE
+    * planned_start_time : TIME
+    planned_end_time : TIME
+    date_occurred : DATE
+    start_time : TIME
+    end_time : TIME
+    duration_minutes : INT
+    teacher_member_id : UUID
+    summary : TEXT
+    nb_believers : INT
+    max_pictures : INT
+    * status : VARCHAR(15)
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_meeting_levels_concerned" as mlc {
+    * **meeting_id** : UUID <<PK,FK>>
+    * **level_id** : UUID <<PK,FK>>
+}
+
+entity "bbcms_meeting_bbc_concerned" as mbc {
+    * **meeting_id** : UUID <<PK,FK>>
+    * **bible_club_id** : UUID <<PK,FK>>
+}
+
+entity "bbcms_meeting_presence" as mp {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * meeting_id : UUID <<FK>>
+    member_id : UUID <<FK>>
+    visitor_id : UUID <<FK>>
+    * present_at : TIMESTAMPTZ
+    * role : VARCHAR(15)
+}
+
+entity "bbcms_meeting_picture" as mpic {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * meeting_id : UUID <<FK>>
+    * file_id : UUID
+    caption : VARCHAR(255)
+    * taken_at : TIMESTAMPTZ
+}
+
+entity "bbcms_event" as evt {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * title : VARCHAR(200)
+    * type : VARCHAR(30)
+    * planned_start_dt : TIMESTAMPTZ
+    planned_end_dt : TIMESTAMPTZ
+    started_at : TIMESTAMPTZ
+    ended_at : TIMESTAMPTZ
+    duration_minutes : INT
+    location : VARCHAR(200)
+    max_pictures : INT
+    * status : VARCHAR(15)
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_event_participation" as ep {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * event_id : UUID <<FK>>
+    member_id : UUID <<FK>>
+    visitor_id : UUID <<FK>>
+    * registered_at : TIMESTAMPTZ
+    * present : BOOLEAN
+    present_at : TIMESTAMPTZ
+}
+
+entity "bbcms_event_picture" as epic {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * event_id : UUID <<FK>>
+    * file_id : UUID
+    caption : VARCHAR(255)
+    * taken_at : TIMESTAMPTZ
+}
+
+entity "bbcms_evangelism_program" as evgp {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * title : VARCHAR(200)
+    * type : VARCHAR(20)
+    * objective_believers : INT
+    total_preached : INT
+    total_saved : INT
+    total_encouraged : INT
+    * status : VARCHAR(15)
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_evangelism_program_dates" as evgpd {
+    * **program_id** : UUID <<PK,FK>>
+    * **date** : DATE <<PK>>
+}
+
+entity "bbcms_evangelism_program_bbc" as evgpb {
+    * **program_id** : UUID <<PK,FK>>
+    * **bible_club_id** : UUID <<PK,FK>>
+}
+
+entity "bbcms_evangelism_record" as evgr {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * program_id : UUID <<FK>>
+    * date : DATE
+    * nb_preached : INT
+    * nb_believed : INT
+    * nb_encouraged : INT
+    nb_tracts_shared : INT
+    saved_contacts : TEXT
+    notes : TEXT
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_evangelism_record_participants" as evgrp {
+    * **record_id** : UUID <<PK,FK>>
+    * **member_id** : UUID <<PK,FK>>
+}
+
+entity "bbcms_disciple_link" as dl {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * disciple_maker_member_id : UUID <<FK>>
+    * disciple_member_id : UUID <<FK>>
+    * date_assigned : DATE
+    date_ended : DATE
+    * active : BOOLEAN
+}
+
+entity "bbcms_discipleship_record" as dr {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * disciple_maker_member_id : UUID <<FK>>
+    meeting_id : UUID <<FK>>
+    * date_occurred : DATE
+    start_time : TIME
+    end_time : TIME
+    theme : VARCHAR(200)
+    location : VARCHAR(200)
+    meeting_description : TEXT
+    disciples_state_text : TEXT
+    spiritual_investment_text : TEXT
+    --
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_discipleship_present" as dp {
+    * **record_id** : UUID <<PK,FK>>
+    * **disciple_member_id** : UUID <<PK,FK>>
+}
+
+entity "bbcms_prayer_chain" as pc {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * bible_club_id : UUID <<FK>>
+    * title : VARCHAR(200)
+    * date_start : DATE
+    date_end : DATE
+    * status : VARCHAR(15)
+}
+
+entity "bbcms_prayer_slot" as ps {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * prayer_chain_id : UUID <<FK>>
+    intercessor_member_id : UUID <<FK>>
+    * dt_start : TIMESTAMPTZ
+    * dt_end : TIMESTAMPTZ
+    * covered : BOOLEAN
+    note : TEXT
+}
+
+entity "bbcms_intercessor_assignment" as ia {
+    * **member_id** : UUID <<PK,FK>>
+    * **bible_club_id** : UUID <<PK,FK>>
+    * date_start : DATE
+    date_end : DATE
+}
+
+entity "bbcms_financial_contribution" as fc {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * bible_club_id : UUID <<FK>>
+    * title : VARCHAR(200)
+    description : TEXT
+    * objective_amount : NUMERIC(15,2)
+    currency : VARCHAR(5)
+    * date_open : DATE
+    date_close : DATE
+    * status : VARCHAR(15)
+    total_contributed : NUMERIC(15,2)
+}
+
+entity "bbcms_contribution_line" as cl {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * contribution_id : UUID <<FK>>
+    contributor_member_id : UUID <<FK>>
+    contributor_name : VARCHAR(200)
+    * amount : NUMERIC(15,2)
+    * payment_channel : VARCHAR(20)
+    payment_reference : VARCHAR(50)
+    * payment_date : DATE
+}
+
+entity "bbcms_attendance_score" as att {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * member_id : UUID <<FK>>
+    bible_club_id : UUID <<FK>>
+    level_id : UUID <<FK>>
+    * academic_year : INT
+    * score : INT
+    * total_eligible : INT
+    * faithful_percentage : NUMERIC(5,2)
+    * faithful : BOOLEAN
+    last_computed_at : TIMESTAMPTZ
+}
+
+entity "bbcms_faithfulness_record" as fr {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * attendance_score_id : UUID <<FK>>
+    member_id : UUID <<FK>>
+    meeting_id : UUID <<FK>>
+    event_id : UUID <<FK>>
+    * source : VARCHAR(20)
+    * counted_at : TIMESTAMPTZ
+    * weight : INT
+}
+
+entity "bbcms_inactivity_watch" as iw {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * member_id : UUID <<FK>>
+    last_seen_at : TIMESTAMPTZ
+    consecutive_absences : INT
+    threshold_days : INT
+    removed_at : TIMESTAMPTZ
+}
+
+entity "bbcms_daily_verse_publication" as dv {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * title : VARCHAR(200)
+    * reference : VARCHAR(50)
+    * verse_text : TEXT
+    reflection_text : TEXT
+    image_file_id : UUID
+    * publish_date : DATE
+    * status : VARCHAR(15)
+    * audience : VARCHAR(20)
+}
+
+entity "bbcms_special_announcement" as sa {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * organization_id : UUID
+    * title : VARCHAR(200)
+    * content : TEXT
+    image_file_id : UUID
+    * type : VARCHAR(20)
+    * publish_date : DATE
+    * status : VARCHAR(15)
+    * audience : VARCHAR(20)
+}
+
+entity "bbcms_bbc_reset_snapshot" as brs {
+    * **id** : UUID <<PK>>
+    --
+    * tenant_id : UUID
+    * bible_club_id : UUID <<FK>>
+    * year : INT
+    * nb_members_before : INT
+    * nb_faithful_before : INT
+    percentage_reached : NUMERIC(5,2)
+    * archived_at : TIMESTAMPTZ
+    archive_file_id : UUID
+}
+
+' Relations
+ua ||--o{ mreq : user_account_id
+bbc ||--o{ lvl : bible_club_id
+bbc ||--o{ mem : bible_club_id
+lvl ||--o{ mem : level_id
+mem ||--o{ md : member_id
+mem ||--o{ lass : member_id
+mem ||--o{ ment : member_id
+bbc ||--o{ ment : bible_club_id
+
+bbc ||--o{ meet : bible_club_id
+lvl ||--o{ meet : level_id
+meet ||--o{ mlc : meeting_id
+meet ||--o{ mbc : meeting_id
+meet ||--o{ mp : meeting_id
+meet ||--o{ mpic : meeting_id
+mem ||--o{ mp : member_id
+vis ||--o{ mp : visitor_id
+
+evt ||--o{ ep : event_id
+evt ||--o{ epic : event_id
+mem ||--o{ ep : member_id
+
+evgp ||--o{ evgr : program_id
+evgp ||--o{ evgpd : program_id
+evgp ||--o{ evgpb : program_id
+evgr ||--o{ evgrp : record_id
+
+mem ||--o{ dl : disciple_maker_member_id
+mem ||--o{ dr : disciple_maker_member_id
+dr ||--o{ dp : record_id
+
+bbc ||--o{ pc : bible_club_id
+pc ||--o{ ps : prayer_chain_id
+mem ||--o{ ps : intercessor_member_id
+mem ||--o{ ia : member_id
+bbc ||--o{ ia : bible_club_id
+
+bbc ||--o{ fc : bible_club_id
+fc ||--o{ cl : contribution_id
+mem ||--o{ cl : contributor_member_id
+
+mem ||--o{ att : member_id
+att ||--o{ fr : attendance_score_id
+mem ||--o{ iw : member_id
+
+bbc ||--o{ brs : bible_club_id
+
+@enduml

@@ -1,0 +1,52 @@
+@startuml ds-bbcms-10-daily-verse-publish
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-10 — Publication d'un BBC Daily Verse
+
+actor "Leader Daily Verse" as dvLeader
+participant "WebController" as ctrl
+participant "PublicationService" as svc
+participant "FilePort\n<<port/out>>" as filePort
+participant "DailyVersePublicationRepository" as repo
+participant "NotificationPort" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+dvLeader -> ctrl : POST /api/v1/bbcms/publications/daily-verses\n{ title, reference, verseText,\n  reflectionText, image, publishDate,\n  audience: ALL_BBC, bibleClubsConcerned? }
+activate ctrl
+
+ctrl -> svc : createDailyVerse(request)
+activate svc
+
+alt image fournie
+    svc -> filePort : storeImage(image)
+    filePort --> svc : imageFileId
+end
+
+svc -> svc : DailyVersePublication.schedule(publishDate)\n(status = SCHEDULED si futur,\n PUBLISHED si aujourd'hui)
+svc -> repo : save(publication)
+repo -> db : INSERT bbcms_daily_verse_publication
+db --> repo : OK
+
+alt status = PUBLISHED
+    svc -> notifPort : broadcastDailyVerse(\n  publicationId, audience, channels)
+    svc -> outbox : insertOutboxEvent(DAILY_VERSE_PUBLISHED,\n  {publicationId, audience})
+else SCHEDULED
+    svc -> outbox : insertOutboxEvent(DAILY_VERSE_SCHEDULED,\n  {publicationId, publishDate})
+end
+
+svc --> ctrl : DailyVersePublication{id, status}
+deactivate svc
+ctrl --> dvLeader : HTTP 201
+deactivate ctrl
+
+note over svc, outbox
+  À l'heure prévue, un job du scheduler
+  bascule SCHEDULED → PUBLISHED et
+  republie l'événement DAILY_VERSE_PUBLISHED
+  qui sera consommé par notification-core
+  (push + e-mail aux audiences ciblées).
+end note
+
+@enduml

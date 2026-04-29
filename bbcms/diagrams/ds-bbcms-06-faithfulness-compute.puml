@@ -1,0 +1,76 @@
+@startuml ds-bbcms-06-faithfulness-compute
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-06 — Calcul périodique de la fidélité (cron) et désinscription des absents
+
+participant "FaithfulnessScheduler\n<<adapter/in>>\n@Scheduled(cron='0 0 2 * * *')" as sched
+participant "FaithfulnessEngine" as engine
+participant "AttendanceService" as svcAtt
+participant "MembershipService" as svcMem
+participant "SettingsPort\n<<port/out>>" as settings
+participant "MemberRepository" as repoMem
+participant "AttendanceRepository" as repoAtt
+participant "MeetingRepository" as repoMeet
+participant "InactivityWatchRepository" as repoIw
+participant "NotificationPort" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+sched -> svcAtt : computeFaithfulnessForAll(orgId)
+activate svcAtt
+
+svcAtt -> settings : getFaithfulnessRules(orgId)
+activate settings
+settings --> svcAtt : Rules {\n  faithfulThresholdPct = 50,\n  inactivityDaysThreshold = 90\n}
+deactivate settings
+
+svcAtt -> repoMem : findAllActiveStudents(orgId)
+repoMem --> svcAtt : Flux<Student>
+
+loop pour chaque student
+    svcAtt -> repoMeet : countEligibleMeetings(\n  student, currentAcademicYear)
+    repoMeet --> svcAtt : totalEligible
+
+    svcAtt -> repoAtt : findOrInit(studentId, year)
+    repoAtt --> svcAtt : AttendanceScore
+
+    svcAtt -> engine : recompute(score, totalEligible, threshold)
+    activate engine
+    note right of engine
+      P% = score / totalEligible × 100
+      faithful = (P% >= 50)
+      Le score est incrémenté par DS-BBCMS-03
+      lors de la saisie de présence.
+    end note
+    engine --> svcAtt : updated AttendanceScore
+    deactivate engine
+
+    svcAtt -> repoAtt : save(score)
+end
+
+svcAtt -> outbox : insertOutboxEvent(FAITHFULNESS_COMPUTED,\n  {orgId, computedAt, nbStudents})
+deactivate svcAtt
+
+== Désinscription automatique des inactifs ==
+
+sched -> svcMem : removeInactiveMembers(orgId)
+activate svcMem
+svcMem -> repoIw : findAllStaleByOrg(orgId, threshold)
+repoIw --> svcMem : List<InactivityWatch>
+
+loop pour chaque inactivité
+    svcMem -> svcMem : iw.removeIfStale(now)\n→ true / false
+
+    alt removed
+        svcMem -> repoMem : updateStatus(memberId, REMOVED)
+        repoMem -> db : UPDATE bbcms_member SET status='REMOVED'
+
+        svcMem -> notifPort : notifyMemberAndLeader(\n  memberId, "Désinscription pour inactivité")
+
+        svcMem -> outbox : insertOutboxEvent(MEMBER_REMOVED_INACTIVITY,\n  {memberId, lastSeenAt})
+    end
+end
+deactivate svcMem
+
+@enduml

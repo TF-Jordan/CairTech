@@ -1,0 +1,83 @@
+@startuml ds-bbcms-07-bbc-reset
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-07 — Réinitialisation annuelle d'un Bible Club
+
+actor "Leader National CHF" as nat
+participant "WebController" as ctrl
+participant "ResetService" as svcReset
+participant "BibleClubRepository" as repoBbc
+participant "MemberRepository" as repoMem
+participant "AttendanceRepository" as repoAtt
+participant "MeetingRepository" as repoMeet
+participant "EvangelismRepository" as repoEvg
+participant "FilePort\n<<port/out>>" as filePort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+nat -> ctrl : POST /api/v1/bbcms/bible-clubs/{id}/reset\n{ academicYear, transferRules }
+activate ctrl
+
+ctrl -> svcReset : resetBibleClub(id, year, rules)
+activate svcReset
+
+svcReset -> repoBbc : findById(bbcId)
+repoBbc --> svcReset : BibleClub{status=ACTIVE}
+
+svcReset -> svcReset : bbc.archive() / bbc.status = UNDER_RESET
+
+== 1. Génération du snapshot d'archive (rapport annuel) ==
+
+svcReset -> repoMem : countActiveByBbc(bbcId)
+repoMem --> svcReset : nbMembers
+svcReset -> repoAtt : countFaithfulByBbcAndYear(bbcId, year)
+repoAtt --> svcReset : nbFaithful
+svcReset -> repoMeet : countByBbcAndYear(bbcId, year)
+repoMeet --> svcReset : nbMeetings
+svcReset -> repoEvg : aggregateByBbcAndYear(bbcId, year)
+repoEvg --> svcReset : EvangelismStats
+
+svcReset -> svcReset : build BibleClubResetSnapshot
+
+svcReset -> filePort : storeArchive(\n  bbcId, year, snapshot, summaryPdf)
+activate filePort
+filePort --> svcReset : archiveFileId
+deactivate filePort
+
+svcReset -> repoBbc : saveResetSnapshot(snapshot)
+repoBbc -> db : INSERT bbcms_bbc_reset_snapshot
+
+== 2. Application des règles de transfert / suppression ==
+
+svcReset -> repoMem : findActiveByBbc(bbcId)
+repoMem --> svcReset : List<Member>
+
+loop pour chaque membre
+    alt rules.transfer(member) -> targetLevelId
+        svcReset -> repoMem : transferLevel(memberId, targetLevelId)
+    else rules.removeIfGraduated(member)
+        svcReset -> repoMem : updateStatus(memberId, TRANSFERRED)
+    end
+end
+
+== 3. Réinitialisation des scores de participation ==
+
+svcReset -> repoAtt : resetByBbcAndYear(bbcId, year)
+repoAtt -> db : UPDATE bbcms_attendance_score SET score=0,\n  faithful=false WHERE academic_year=?
+
+== 4. Réactivation du BBC pour la nouvelle année ==
+
+svcReset -> svcReset : bbc.status = ACTIVE
+svcReset -> repoBbc : save(bbc)
+repoBbc -> db : UPDATE bbcms_bible_club
+
+svcReset -> outbox : insertOutboxEvent(BBC_RESET,\n  {bibleClubId, year, nbMembersBefore,\n   nbFaithfulBefore, archiveFileId})
+outbox -> db : INSERT kernel.outbox_event
+
+svcReset --> ctrl : BibleClubResetSnapshot
+deactivate svcReset
+ctrl --> nat : HTTP 200 — ResetReportResponse
+deactivate ctrl
+
+@enduml

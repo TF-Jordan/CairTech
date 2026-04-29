@@ -1,0 +1,34 @@
+@startuml sm-evangelism-program
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — EvangelismProgram
+
+[*] --> PLANNED : plan(type, dates,\n  bbcConcerned, objective)
+
+PLANNED --> ONGOING : start()\n[1ère date atteinte]
+PLANNED --> CLOSED : cancel()
+
+ONGOING --> CLOSED : close()\n[dernière date dépassée\n ou clôture manuelle]
+
+CLOSED --> [*]
+
+note right of ONGOING
+  Saisie des EvangelismRecord
+  autorisée uniquement pour
+  les dates ∈ programme.dates.
+
+  Les totaux (preached, saved,
+  encouraged) sont incrémentés
+  à chaque record.
+end note
+
+note right of CLOSED
+  Calcul du
+  percentageRealization =
+  totalSaved / objective × 100.
+  Création des DiscipleLink
+  pour les nouveaux croyants.
+end note
+
+@enduml

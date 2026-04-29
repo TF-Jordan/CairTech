@@ -1,0 +1,77 @@
+@startuml dc-publication
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Publications" #FAF5FF {
+
+    class DailyVersePublication extends BaseEntity {
+        - title : String
+        - reference : String
+        - verseText : String
+        - reflectionText : String
+        - imageFileId : UUID
+        - publishDate : LocalDate
+        - status : PublicationStatus
+        - audience : PublicationAudience
+        - bibleClubsConcerned : Set<UUID>
+        + schedule(date) : void
+        + publish() : void
+        + retract() : void
+    }
+
+    class SpecialAnnouncement extends BaseEntity {
+        - title : String
+        - content : String
+        - imageFileId : UUID
+        - type : AnnouncementType
+        - publishDate : LocalDate
+        - audience : PublicationAudience
+        - status : PublicationStatus
+    }
+
+    enum PublicationStatus {
+        DRAFT
+        SCHEDULED
+        PUBLISHED
+        RETRACTED
+    }
+
+    enum PublicationAudience {
+        ALL_CHF
+        ALL_BBC
+        SPECIFIC_BBC
+        LEADERS_ONLY
+    }
+
+    enum AnnouncementType {
+        BIRTHDAY
+        CONGRESS
+        SUMMIT
+        SPECIAL_EVENT
+        OBITUARY
+        OTHER
+    }
+
+    DailyVersePublication --> PublicationStatus
+    DailyVersePublication --> PublicationAudience
+    SpecialAnnouncement --> PublicationStatus
+    SpecialAnnouncement --> PublicationAudience
+    SpecialAnnouncement --> AnnouncementType
+}
+
+@enduml

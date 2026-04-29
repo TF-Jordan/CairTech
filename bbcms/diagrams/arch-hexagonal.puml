@@ -1,0 +1,85 @@
+@startuml arch-hexagonal
+!theme plain
+skinparam componentStyle rectangle
+skinparam defaultTextAlignment center
+
+title Architecture Hexagonale — bbcms-core dans la plateforme CHF-OPS
+
+package "bbcms-core" #F0F0FF {
+
+    package "domain/" #FFFFDD {
+        component [BibleClub\nLevel\nMember\nNationalLeader\nProfessional\nMentor\nMeeting\nEvent\nAttendance\nEvangelismProgram\nEvangelismRecord\nDiscipleshipRecord\nPrayerChain\nFinancialContribution\nDailyVerse] as domain
+        note bottom of domain
+            Agrégats, Value Objects,
+            Événements domaine,
+            Règles métier pures
+            (aucune dépendance technique)
+        end note
+    }
+
+    package "application/" #DDFFDD {
+        interface "<<port/in>>\nManageUserAccountUseCase\nManageBibleClubUseCase\nManageMembershipUseCase\nManageMeetingUseCase\nManageEventUseCase\nRecordAttendanceUseCase\nManageEvangelismUseCase\nManageDiscipleshipUseCase\nManageIntercessionUseCase\nManageFinancialContribUseCase\nPublishDailyVerseUseCase\nResetBibleClubUseCase\nComputeFaithfulnessUseCase" as portIn
+
+        component [UserAccountService\nBibleClubService\nMembershipService\nMeetingService\nEventService\nAttendanceService\nFaithfulnessEngine\nEvangelismService\nDiscipleshipService\nIntercessionService\nFinancialContribService\nPublicationService\nResetService] as services
+
+        interface "<<port/out>>\nUserAccountRepository\nBibleClubRepository\nMemberRepository\nMeetingRepository\nEventRepository\nAttendanceRepository\nEvangelismRepository\nDiscipleshipRepository\nFinancialContribRepository\nActorPort\nNotificationPort\nSettingsPort\nFilePort\nLocalSyncPort" as portOut
+    }
+
+    package "adapter/in/" #DDDDFF {
+        component [WebController\n(Spring WebFlux)\nDTO / Mapper] as adapterInWeb
+        component [MobileSyncController\n(REST + WebSocket)] as adapterInMobile
+        component [Scheduler\n(@Scheduled Quartz)] as adapterInSched
+    }
+
+    package "adapter/out/" #FFDDDD {
+        component [R2DBC Repositories\n(persistence — online DB)] as adapterOutPersist
+        component [SQLite/Room Repositories\n(persistence — offline cache)] as adapterOutLocal
+        component [ActorAdapter\nNotificationAdapter\nSettingsAdapter\nFileAdapter] as adapterOutAdapters
+        component [BbcmsEventConsumer\n(Kafka)] as adapterOutKafka
+    }
+
+    package "config/" #F0F0F0 {
+        component [BbcmsCoreConfiguration\nBbcmsPermissionRegistrar\nBbcmsLiquibaseConfig] as config
+    }
+}
+
+' Flux
+adapterInWeb -down-> portIn : implémente
+adapterInMobile -down-> portIn : implémente
+adapterInSched -down-> portIn : déclenche
+portIn -down-> services : orchestre
+services -down-> domain : utilise
+services -down-> portOut : appelle
+portOut -down-> adapterOutPersist : implémenté par
+portOut -down-> adapterOutLocal : implémenté par
+portOut -down-> adapterOutAdapters : implémenté par
+
+' Cores externes
+cloud "actor-core" as actorCore
+cloud "notification-core" as notifCore
+cloud "settings-core" as settingsCore
+cloud "file-core" as fileCore
+cloud "kernel-core" as kernelCore
+cloud "roles-core" as rolesCore
+cloud "auth-core" as authCore
+cloud "common-core" as commonCore
+queue "Kafka\nchf.events.business" as kafka
+
+' Connexions
+adapterOutAdapters -down-> actorCore : <<port/out synchrone>>
+adapterOutAdapters -down-> notifCore : <<port/out synchrone>>\npush / e-mail / SMS
+adapterOutAdapters -down-> settingsCore : <<port/out synchrone>>
+adapterOutAdapters -down-> fileCore : <<port/out synchrone>>
+
+domain .up.> commonCore : <<extends BaseEntity>>\n<<utilise PartyRef>>
+adapterInWeb .right.> rolesCore : <<@Secured>> vérification\ntransparente via filtre
+adapterInWeb .left.> commonCore : <<PagedResponse>>\n<<ApiErrorResponse>>
+adapterInMobile .right.> authCore : token JWT\n(login mobile)
+adapterOutPersist -down-> kernelCore : <<outbox transactionnel>>\n<<audit trail>>\n<<tenant routing>>
+
+adapterOutKafka <-left- kafka : consume\nACTOR_UPDATED\nNOTIFICATION_DELIVERED
+kernelCore -right-> kafka : relay outbox
+kafka -down-> notifCore : MEETING_PLANNED\nEVENT_PLANNED
+kafka -down-> actorCore : MEMBER_ADDED\nLEADER_ASSIGNED
+
+@enduml

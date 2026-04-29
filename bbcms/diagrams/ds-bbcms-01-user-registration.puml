@@ -1,0 +1,105 @@
+@startuml ds-bbcms-01-user-registration
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-01 — Inscription d'un utilisateur et affectation à un Bible Club
+
+actor "Visiteur" as visitor
+actor "Leader BBC\n(ou Leader National)" as leader
+participant "WebController\n<<adapter/in>>" as ctrl
+participant "UserAccountService\n<<application/service>>" as svcUser
+participant "MembershipService\n<<application/service>>" as svcMem
+participant "ActorPort\n<<port/out>>" as actorPort
+participant "UserAccountRepository\n<<port/out>>" as repoUser
+participant "MembershipRequestRepository\n<<port/out>>" as repoReq
+participant "MemberRepository\n<<port/out>>" as repoMem
+participant "NotificationPort\n<<port/out>>" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent\n<<kernel-core>>" as outbox
+
+== Phase 1 : Création du compte ==
+
+visitor -> ctrl : POST /api/v1/bbcms/users\n{ email, password, profile,\n  requestedType: STUDENT,\n  bibleClubId, levelId }
+activate ctrl
+
+ctrl -> svcUser : createAccount(request)
+activate svcUser
+
+svcUser -> repoUser : existsByEmail(email)
+repoUser -> db : SELECT count(*) FROM bbcms_user_account
+db --> repoUser : 0
+repoUser --> svcUser : false
+
+svcUser -> actorPort : registerOrResolve(email, profile)
+activate actorPort
+note right of actorPort
+  Création / récupération
+  de l'Actor dans actor-core,
+  puis retour PartyRef
+  (DS-S-01)
+end note
+actorPort --> svcUser : PartyRef{partyId, displayName}
+deactivate actorPort
+
+svcUser -> svcUser : UserAccount.activate()\n(status = PENDING jusqu'à e-mail)
+svcUser -> repoUser : save(userAccount)
+repoUser -> db : INSERT INTO bbcms_user_account
+db --> repoUser : OK
+
+svcUser -> svcMem : submitMembershipRequest(\n  userAccount, requestedType,\n  bibleClubId, levelId, profession?)
+activate svcMem
+svcMem -> repoReq : save(MembershipRequest{status=PENDING})
+repoReq -> db : INSERT INTO bbcms_membership_request
+db --> repoReq : OK
+
+svcMem -> outbox : insertOutboxEvent(\n  MEMBERSHIP_REQUESTED,\n  {userAccountId, bibleClubId})
+outbox -> db : INSERT kernel.outbox_event
+deactivate svcMem
+
+svcUser --> ctrl : UserAccount{id, status=PENDING}
+deactivate svcUser
+ctrl --> visitor : HTTP 201 — RegistrationResponse
+deactivate ctrl
+
+== Phase 2 : Approbation par un leader ==
+
+leader -> ctrl : POST /api/v1/bbcms/membership-requests/{id}/approve\n{ assignedBibleClubId, assignedLevelId }
+activate ctrl
+
+ctrl -> svcMem : approveRequest(reqId, by, bbcId, levelId)
+activate svcMem
+
+svcMem -> repoReq : findById(reqId)
+repoReq --> svcMem : MembershipRequest
+svcMem -> svcMem : MembershipRequest.approve(by, bbcId, levelId)
+
+note right of svcMem
+  Vérification des droits :
+  • un Leader BBC peut approuver
+    uniquement pour son BBC
+  • un Leader National peut tout
+end note
+
+svcMem -> repoMem : save(Member{kind=STUDENT,\n  bibleClubId, levelId, status=ACTIVE})
+repoMem -> db : INSERT INTO bbcms_member
+db --> repoMem : OK
+
+svcMem -> repoUser : updateUserType(userAccountId, STUDENT)
+repoUser -> db : UPDATE bbcms_user_account SET user_type=...
+
+svcMem -> repoReq : save(MembershipRequest{status=APPROVED})
+repoReq -> db : UPDATE bbcms_membership_request
+
+svcMem -> outbox : insertOutboxEvent(MEMBER_ADDED,\n  {memberId, bibleClubId, levelId})
+outbox -> db : INSERT kernel.outbox_event
+
+svcMem -> notifPort : notifyUser(userAccountId,\n  "Votre adhésion est approuvée")
+notifPort --> svcMem : queued
+
+svcMem --> ctrl : Member{id, status=ACTIVE}
+deactivate svcMem
+
+ctrl --> leader : HTTP 200 — MembershipApprovedResponse
+deactivate ctrl
+
+@enduml

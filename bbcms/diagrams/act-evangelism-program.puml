@@ -1,0 +1,55 @@
+@startuml act-evangelism-program
+!theme plain
+skinparam activityFontSize 11
+
+title Diagramme d'activité — Campagne d'évangélisation
+
+|Leader Évangélisation & Discipulat|
+start
+:Crée un programme\nd'évangélisation;
+:Choisit le type :\nINTERNAL_BBC / JOINT_BBC / NATIONAL;
+:Définit l'objectif\n(nb croyants visés);
+:Sélectionne les BBC concernés\net la liste des dates;
+
+|bbcms-core|
+:Persiste EvangelismProgram\n(status = ONGOING);
+:Publie EVANGELISM_PROGRAM_CREATED;
+:Notifie via notification-core\nles BBC concernés;
+
+|Membres évangélistes|
+:Le jour J, partent prêcher;
+
+|Leader Évangélisation & Discipulat|
+repeat
+    :Saisit un compte rendu\n(EvangelismRecord) :\n• date,\n• participants présents,\n• nb prêchés,\n• nb croyants,\n• nb encouragés,\n• nb tracts distribués,\n• contacts sauvés,\n• défis et notes;
+
+    |bbcms-core|
+    if (date ∈ programme.dates ?) then (non)
+        :Erreur 400\n— date hors programme;
+        |Leader Évangélisation & Discipulat|
+        :Corrige la date;
+        detach
+    else (oui)
+    endif
+
+    :Persiste EvangelismRecord;
+    :Met à jour les totaux du programme\n(totalPreached, totalSaved,\n totalEncouraged);
+    :Publie EVANGELISM_RECORDED;
+repeat while (autres comptes rendus ?) is (oui)
+->non;
+
+|Leader Évangélisation & Discipulat|
+:Clôture le programme;
+
+|bbcms-core|
+:status = CLOSED;
+:Calcule le pourcentage\nde réalisation\n(totalSaved / objective × 100);
+
+:Crée un DiscipleLink pour\nchaque nouveau croyant à\nsuivre par un disciple maker;
+:Notifie les disciple makers;
+
+|Leader Évangélisation & Discipulat|
+:Consulte le rapport final\n• total prêchés / sauvés,\n• % objectif atteint,\n• répartition par campagne;
+stop
+
+@enduml

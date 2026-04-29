@@ -1,0 +1,137 @@
+@startuml dc-meeting
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Réunions & Assemblées" #FFFAF0 {
+
+    class Meeting extends BaseEntity {
+        - title : String
+        - type : MeetingType
+        - bibleClubId : UUID
+        - levelId : UUID
+        - levelsConcerned : Set<UUID>
+        - bibleClubsConcerned : Set<UUID>
+        - department : Department
+        - plannedDate : LocalDate
+        - plannedStartTime : LocalTime
+        - plannedEndTime : LocalTime
+        - dateOccurred : LocalDate
+        - startTime : LocalTime
+        - endTime : LocalTime
+        - duration : Duration
+        - teacherMemberId : UUID
+        - summary : String
+        - nbBelievers : int
+        - maxPictures : int
+        - status : MeetingStatus
+        + plan() : void
+        + start() : void
+        + end() : void
+        + recordPresence(memberIds) : void
+        + addPicture(fileId) : void
+        + nbPresent() : int
+        + isJoint() : boolean
+    }
+
+    class MeetingPresence extends BaseEntity {
+        - meetingId : UUID
+        - memberId : UUID
+        - visitorId : UUID
+        - presentAt : Instant
+        - role : PresenceRole
+        + isVisitor() : boolean
+    }
+
+    class MeetingPicture <<Value Object>> {
+        - fileId : UUID
+        - caption : String
+        - takenAt : Instant
+    }
+
+    class MeetingNotification <<Value Object>> {
+        - sentAt : Instant
+        - channel : NotificationChannel
+        - audienceCount : int
+        - status : NotificationStatus
+    }
+
+    enum MeetingStatus {
+        PLANNED
+        ONGOING
+        ENDED
+        RECORDED
+        CANCELLED
+    }
+
+    enum MeetingType {
+        GENERAL_MEETING
+        ACADEMIC_MEETING
+        CLASS_MEETING
+        JOINT_CLASS_MEETING
+        JOINT_BBC_MEETING
+        DEPARTMENTAL_MEETING
+        LEADERS_MEETING
+        SPIRITUAL_RETREAT
+        PRAYER_MEETING
+        WELCOME_PARTY
+        CONFERENCE
+        FEAST
+    }
+
+    enum Department {
+        INTERCESSOR
+        DISCIPLE_MAKER
+        CHARIS
+        DIVINE_SHAKERS
+        ACT_OF_CHRIST
+        ACADEMICS
+        MIGHTY_MEN_OF_VALOR
+        LADIES
+    }
+
+    enum PresenceRole {
+        MEMBER
+        VISITOR
+        TEACHER
+        SPEAKER
+    }
+
+    enum NotificationChannel {
+        PUSH
+        EMAIL
+        SMS
+    }
+
+    enum NotificationStatus {
+        SCHEDULED
+        SENT
+        FAILED
+    }
+
+    Meeting *-- "0..*" MeetingPresence
+    Meeting *-- "0..*" MeetingPicture
+    Meeting *-- "0..*" MeetingNotification
+    Meeting --> MeetingStatus
+    Meeting --> MeetingType
+    Meeting --> Department
+    MeetingPresence --> PresenceRole
+    MeetingNotification --> NotificationChannel
+    MeetingNotification --> NotificationStatus
+}
+
+@enduml

@@ -1,0 +1,86 @@
+@startuml ds-bbcms-04-event-create-enroll
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-04 — Création d'un événement national et inscription d'un membre
+
+actor "Leader National CHF" as nat
+actor "Membre" as member
+participant "WebController" as ctrl
+participant "EventService" as svc
+participant "EventRepository" as repoEvt
+participant "MemberRepository" as repoMem
+participant "NotificationPort" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+== Phase 1 : Planification (Leader National uniquement) ==
+
+nat -> ctrl : POST /api/v1/bbcms/events\n{ title, type: NATIONAL_CONGRESS,\n  plannedStartDateTime, plannedEndDateTime,\n  location, maxPictures }
+activate ctrl
+
+ctrl -> svc : planEvent(request)
+activate svc
+
+svc -> svc : Event.plan()\n(status = REGISTRATION_OPEN)
+svc -> repoEvt : save(event)
+repoEvt -> db : INSERT INTO bbcms_event
+db --> repoEvt : OK
+
+svc -> repoMem : findAllActiveCHF(orgId)
+repoMem --> svc : Flux<Member>
+
+svc -> notifPort : broadcastEventInvitation(\n  eventId, audience, channels)
+notifPort --> svc : queued
+
+svc -> outbox : insertOutboxEvent(EVENT_PLANNED,\n  {eventId, type, plannedStart})
+outbox -> db : INSERT kernel.outbox_event
+
+svc --> ctrl : Event{status=REGISTRATION_OPEN}
+deactivate svc
+ctrl --> nat : HTTP 201 — EventResponse
+deactivate ctrl
+
+== Phase 2 : Inscription par un membre ==
+
+member -> ctrl : POST /api/v1/bbcms/events/{id}/enroll
+activate ctrl
+
+ctrl -> svc : enroll(eventId, memberId)
+activate svc
+
+svc -> repoEvt : findById(eventId)
+repoEvt --> svc : Event{status=REGISTRATION_OPEN}
+
+svc -> svc : event.addParticipant(memberId)\n(idempotent : ignore si déjà inscrit)
+
+svc -> repoEvt : save(event)
+repoEvt -> db : INSERT INTO bbcms_event_participation\n(present=false)
+db --> repoEvt : OK
+
+svc -> outbox : insertOutboxEvent(EVENT_ENROLLED,\n  {eventId, memberId})
+outbox -> db : INSERT kernel.outbox_event
+
+svc --> ctrl : EventParticipation{registeredAt}
+deactivate svc
+ctrl --> member : HTTP 201 — EnrollmentResponse
+deactivate ctrl
+
+== Phase 3 : Présence (le jour J) ==
+
+nat -> ctrl : POST /api/v1/bbcms/events/{id}/presence\n{ presents: [memberIds, visitorIds] }
+activate ctrl
+ctrl -> svc : recordPresence(eventId, presents)
+activate svc
+
+loop pour chaque présent
+    svc -> repoEvt : markPresent(eventId, memberId|visitorId)
+end
+
+svc -> outbox : insertOutboxEvent(EVENT_RECORDED,\n  {eventId, nbPresent,\n   percentagePresent})
+svc --> ctrl : Event{status=ENDED, nbPresent}
+deactivate svc
+ctrl --> nat : HTTP 200
+deactivate ctrl
+
+@enduml

@@ -1,0 +1,58 @@
+@startuml act-faithfulness-tracking
+!theme plain
+skinparam activityFontSize 11
+
+title Diagramme d'activité — Suivi de fidélité et participation
+
+|Système (Scheduler)|
+start
+:Cron quotidien 02h00\nFaithfulnessScheduler;
+
+|bbcms-core|
+:Lire les paramètres\nvia settings-core :\n• seuil de fidélité (50 %)\n• seuil d'inactivité (90 j);
+
+:Charger tous les Étudiants\nactifs de l'organisation;
+
+partition "Boucle par étudiant" {
+    :Récupérer les meetings\néligibles pour cet étudiant\n(selon son niveau, BBC,\n département, leadership);
+
+    :totalEligible =\n  count(meetings éligibles);
+    :score = AttendanceScore.score\n(incrémenté par DS-BBCMS-03);
+
+    :P% = score / totalEligible × 100;
+
+    if (totalEligible == 0 ?) then (oui)
+        :faithful = false\n(pas encore évaluable);
+    else (non)
+        if (P% >= 50 ?) then (oui)
+            :faithful = true;
+        else (non)
+            :faithful = false;
+        endif
+    endif
+
+    :Mettre à jour AttendanceScore;
+}
+
+:Publier événement\nFAITHFULNESS_COMPUTED;
+
+partition "Détection des inactifs" {
+    :Charger les InactivityWatch\noù lastSeenAt + threshold < now;
+
+    while (membre inactif suivant ?) is (oui)
+        :Marquer Member.status = REMOVED;
+        :Notifier le membre + leader BBC;
+        :Publier MEMBER_REMOVED_INACTIVITY;
+    endwhile (non)
+}
+
+|Leader BBC|
+:Consulte le tableau de bord\n• % membres fidèles\n• liste des non-fidèles\n• évolution dans le temps;
+
+if (Action de relance ?) then (oui)
+    :Envoie un message ciblé\nvia notification-core;
+endif
+
+stop
+
+@enduml

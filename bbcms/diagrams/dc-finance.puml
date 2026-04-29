@@ -1,0 +1,67 @@
+@startuml dc-finance
+!theme plain
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+package "common-core" #EEEEEE {
+    abstract class BaseEntity {
+        # id : UUID
+        # tenantId : UUID
+        # organizationId : UUID
+        # agencyId : UUID
+        # createdBy : UUID
+        # createdAt : Instant
+        # updatedBy : UUID
+        # updatedAt : Instant
+        # version : Long
+    }
+}
+
+package "bbcms-core / domain — Finances" #FFFFF0 {
+
+    class FinancialContribution extends BaseEntity {
+        - title : String
+        - description : String
+        - bibleClubId : UUID
+        - objectiveAmount : BigDecimal
+        - currency : String
+        - dateOpen : LocalDate
+        - dateClose : LocalDate
+        - status : FinancialContributionStatus
+        - totalContributed : BigDecimal
+        + open() : void
+        + close() : void
+        + addLine(line) : void
+        + percentageReached() : BigDecimal
+    }
+
+    class ContributionLine extends BaseEntity {
+        - contributionId : UUID
+        - contributorMemberId : UUID
+        - contributorName : String
+        - amount : BigDecimal
+        - paymentChannel : PaymentChannel
+        - paymentReference : String
+        - paymentDate : LocalDate
+        + isFromMember() : boolean
+    }
+
+    enum FinancialContributionStatus {
+        OPEN
+        CLOSED
+        CANCELLED
+    }
+
+    enum PaymentChannel {
+        CASH
+        BANK_TRANSFER
+        MTN_MOBILE_MONEY
+        ORANGE_MONEY
+    }
+
+    FinancialContribution *-- "0..*" ContributionLine
+    FinancialContribution --> FinancialContributionStatus
+    ContributionLine --> PaymentChannel
+}
+
+@enduml

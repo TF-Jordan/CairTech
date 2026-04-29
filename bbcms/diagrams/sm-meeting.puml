@@ -1,0 +1,34 @@
+@startuml sm-meeting
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — Meeting
+
+[*] --> PLANNED : plan(type, scope, plannedDate)
+
+PLANNED --> ONGOING : start()\n[date + heure réelle]
+PLANNED --> CANCELLED : cancel(reason)
+
+ONGOING --> ENDED : end()\n[heure réelle de fin]
+
+ENDED --> RECORDED : recordPresence(...)\n+ pictures, summary,\n  nbBelievers
+ENDED --> CANCELLED : cancel(reason)\n[hors politique standard]
+
+RECORDED --> [*] : score participation\n+ MEETING_RECORDED
+CANCELLED --> [*] : aucune participation\ncomptée
+
+note right of PLANNED
+  Notification audience programmée
+  (rappel 24 h + alarme à H).
+  Le statut reste PLANNED jusqu'à
+  l'ouverture par le leader.
+end note
+
+note right of RECORDED
+  Une fois RECORDED, les présences
+  alimentent AttendanceScore.
+  Une réunion ne peut plus être
+  rouverte (autre cycle).
+end note
+
+@enduml

@@ -1,0 +1,64 @@
+@startuml ds-bbcms-08-financial-contribution
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-08 — Création d'une contribution et enregistrement d'un versement
+
+actor "Leader Financier" as fin
+actor "Membre / Donateur" as donor
+participant "WebController" as ctrl
+participant "FinancialContribService" as svc
+participant "FinancialContribRepository" as repo
+participant "NotificationPort" as notifPort
+database "PostgreSQL" as db
+participant "OutboxEvent" as outbox
+
+== Phase 1 : Création de la contribution ==
+
+fin -> ctrl : POST /api/v1/bbcms/contributions\n{ title, description,\n  bibleClubId, objectiveAmount,\n  currency, dateOpen, dateClose }
+activate ctrl
+
+ctrl -> svc : createContribution(request)
+activate svc
+svc -> svc : FinancialContribution.open()
+svc -> repo : save(contribution)
+repo -> db : INSERT bbcms_financial_contribution
+db --> repo : OK
+
+svc -> outbox : insertOutboxEvent(CONTRIBUTION_OPENED,\n  {contributionId, bibleClubId,\n   objectiveAmount})
+
+svc --> ctrl : FinancialContribution{id, status=OPEN}
+deactivate svc
+ctrl --> fin : HTTP 201
+deactivate ctrl
+
+== Phase 2 : Enregistrement d'un versement ==
+
+donor -> fin : remet le montant\n(cash / mobile money / virement)
+
+fin -> ctrl : POST /api/v1/bbcms/contributions/{id}/lines\n{ contributorMemberId?, contributorName,\n  amount, paymentChannel, paymentReference,\n  paymentDate }
+activate ctrl
+
+ctrl -> svc : addLine(contributionId, request)
+activate svc
+
+svc -> repo : findById(contributionId)
+repo --> svc : FinancialContribution{status=OPEN}
+
+svc -> svc : contribution.addLine(line)\ntotalContributed += line.amount
+
+svc -> repo : save(line + contribution)
+repo -> db : INSERT bbcms_contribution_line\n+ UPDATE bbcms_financial_contribution
+
+svc -> outbox : insertOutboxEvent(CONTRIBUTION_RECORDED,\n  {contributionId, lineId, amount,\n   percentageReached})
+
+alt percentageReached >= 100
+    svc -> notifPort : notifyLeaders(\n  "Objectif atteint pour " + title)
+end
+
+svc --> ctrl : ContributionLine{id} +\n  Contribution{percentageReached}
+deactivate svc
+ctrl --> fin : HTTP 201 — ContributionLineResponse
+deactivate ctrl
+
+@enduml

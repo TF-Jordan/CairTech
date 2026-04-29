@@ -1,0 +1,43 @@
+@startuml sm-member
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — Member (et statut de fidélité)
+
+[*] --> ACTIVE : MembershipRequest approuvée\n→ MEMBER_ADDED
+
+state ACTIVE {
+    [*] --> UNDER_EVALUATION : pas encore\nassez de meetings éligibles
+    UNDER_EVALUATION --> FAITHFUL : P% >= seuil\n(cron quotidien)
+    UNDER_EVALUATION --> UNFAITHFUL : P% < seuil
+    FAITHFUL --> UNFAITHFUL : P% redescend
+    UNFAITHFUL --> FAITHFUL : P% remonte
+}
+
+ACTIVE --> INACTIVE : aucune participation\ndepuis > 30 j
+INACTIVE --> ACTIVE : présence enregistrée
+INACTIVE --> REMOVED : aucune participation\ndepuis > 90 j (cron)
+
+ACTIVE --> TRANSFERRED : transferLevel() /\nréinitialisation BBC
+ACTIVE --> REMOVED : leave() (auto-suppression)\nou removeByLeader()
+
+TRANSFERRED --> [*]
+REMOVED --> [*]
+
+note right of REMOVED
+  L'historique des présences,
+  scores et contributions reste
+  archivé (audit trail kernel-core),
+  mais le membre n'est plus
+  pris en compte dans les
+  calculs courants.
+end note
+
+note right of ACTIVE
+  Sous-état FAITHFUL / UNFAITHFUL
+  recalculé par DS-BBCMS-06.
+  Le seuil par défaut est 50 %
+  (paramétrable via settings-core).
+end note
+
+@enduml

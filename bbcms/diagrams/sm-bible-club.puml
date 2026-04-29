@@ -1,0 +1,39 @@
+@startuml sm-bible-club
+!theme plain
+skinparam stateFontSize 12
+
+title Machine à états — BibleClub
+
+[*] --> ACTIVE : create(name, school, president)
+
+ACTIVE --> UNDER_RESET : startReset(year)\n[Leader National en début\n d'année académique]
+ACTIVE --> ARCHIVED : archive()\n[fermeture définitive\n du Bible Club]
+
+UNDER_RESET --> ACTIVE : finishReset()\n[snapshot annuel généré,\n transferts effectués,\n scores remis à 0]
+
+ARCHIVED --> [*]
+
+note right of ACTIVE
+  État nominal :
+  • réunions / événements possibles,
+  • inscription de membres,
+  • saisie d'évangélisation,
+  • contributions financières.
+end note
+
+note right of UNDER_RESET
+  État transitoire :
+  les écritures sont gelées
+  pendant la génération de
+  l'archive et le transfert
+  des membres entre niveaux.
+end note
+
+note right of ARCHIVED
+  Aucune écriture n'est plus
+  permise ; les données
+  restent consultables en
+  lecture seule.
+end note
+
+@enduml
