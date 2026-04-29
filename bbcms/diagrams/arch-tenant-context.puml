@@ -2,7 +2,7 @@
 !theme plain
 skinparam componentStyle rectangle
 
-title Propagation du contexte de sécurité (User / BibleClub) dans bbcms
+title Propagation du contexte de sécurité (User / Bible Club) dans bbcms
 
 actor "Leader BBC" as leader
 
@@ -33,7 +33,7 @@ package "bbcms — application & adapter/out" #E8EAF6 {
     component [WebController] as ctrl
     component [Service Layer] as svc
     component [R2DBC Repository] as repo
-    database "PostgreSQL\n(schéma bbcms)" as db
+    database "PostgreSQL\n(base unique bbcms)" as db
 }
 
 leader -down-> client : se connecte\n(login une seule fois)
@@ -45,8 +45,8 @@ ctrl -down-> svc : recordMeetingAttendance(\n  meetingId, presents[]\n)
 
 note right of ctrl
     Le Leader BBC ne spécifie
-    **JAMAIS** son Bible Club.
-    Cette information est **implicite**
+    **JAMAIS** son Bible Club —
+    cette information est **implicite**
     dans le contexte de sécurité.
 
     Un Mentor peut **optionnellement**
@@ -60,19 +60,18 @@ svc -down-> repo : findActiveMembers(\n  bbcId = context.bibleClubId\n)
 repo -down-> db : SELECT * FROM bbcms_member\nWHERE bible_club_id = 'bbc-uy1'
 
 note bottom of db
-    bbcms est une application autonome :
-    une seule base PostgreSQL pour
-    l'ensemble des Bible Clubs de la CHF.
+    bbcms est une application **mono-organisation**
+    (une seule CHF) : une seule base PostgreSQL,
+    aucun cloisonnement multi-tenant.
 
-    La séparation se fait par
-    **bible_club_id** (colonne héritée
-    de BaseEntity, dans bbcms / shared)
-    et est vérifiée par le module
+    Le filtrage fonctionnel s'opère uniquement par
+    **bible_club_id** sur les données rattachées
+    à un Bible Club, vérifié par le module
     **authorization** avant chaque écriture.
 
-    En mode hors-ligne, une **base SQLite
-    locale** réplique le sous-ensemble
-    propre à l'utilisateur connecté.
+    En mode hors-ligne, une **base SQLite locale**
+    réplique le sous-ensemble propre à
+    l'utilisateur connecté.
 end note
 
 @enduml

@@ -6,9 +6,6 @@ skinparam linetype ortho
 package "bbcms / shared" #EEEEEE {
     abstract class BaseEntity {
         # id : UUID
-        # tenantId : UUID
-        # organizationId : UUID
-        # agencyId : UUID
         # createdBy : UUID
         # createdAt : Instant
         # updatedBy : UUID

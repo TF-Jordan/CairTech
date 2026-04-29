@@ -17,15 +17,15 @@ participant "NotificationPort" as notifPort
 database "PostgreSQL" as db
 participant "DomainEventBus" as outbox
 
-sched -> svcAtt : computeFaithfulnessForAll(orgId)
+sched -> svcAtt : computeFaithfulnessForAll()
 activate svcAtt
 
-svcAtt -> settings : getFaithfulnessRules(orgId)
+svcAtt -> settings : getFaithfulnessRules()
 activate settings
 settings --> svcAtt : Rules {\n  faithfulThresholdPct = 50,\n  inactivityDaysThreshold = 90\n}
 deactivate settings
 
-svcAtt -> repoMem : findAllActiveStudents(orgId)
+svcAtt -> repoMem : findAllActiveStudents()
 repoMem --> svcAtt : Flux<Student>
 
 loop pour chaque student
@@ -49,14 +49,14 @@ loop pour chaque student
     svcAtt -> repoAtt : save(score)
 end
 
-svcAtt -> outbox : publishDomainEvent(FAITHFULNESS_COMPUTED,\n  {orgId, computedAt, nbStudents})
+svcAtt -> outbox : publishDomainEvent(FAITHFULNESS_COMPUTED,\n  {computedAt, nbStudents})
 deactivate svcAtt
 
 == Désinscription automatique des inactifs ==
 
-sched -> svcMem : removeInactiveMembers(orgId)
+sched -> svcMem : removeInactiveMembers()
 activate svcMem
-svcMem -> repoIw : findAllStaleByOrg(orgId, threshold)
+svcMem -> repoIw : findAllStale(threshold)
 repoIw --> svcMem : List<InactivityWatch>
 
 loop pour chaque inactivité

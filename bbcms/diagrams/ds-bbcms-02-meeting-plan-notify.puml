@@ -18,8 +18,8 @@ leader -> ctrl : POST /api/v1/bbcms/meetings\n{\n  type: CLASS_MEETING,\n  bible
 activate ctrl
 
 note right of ctrl
-  tenantId, organizationId, bibleClubId
-  proviennent du JWT (bbcms / shared).
+  userId et bibleClubId proviennent
+  du JWT (module security).
   Pour un Leader National ou Mentor,
   bibleClubId / levelId peuvent être
   passés explicitement.
@@ -28,7 +28,7 @@ end note
 ctrl -> svc : planMeeting(request)
 activate svc
 
-svc -> settings : getMeetingDefaults(orgId, bibleClubId?)
+svc -> settings : getMeetingDefaults(bibleClubId?)
 activate settings
 settings --> svc : MeetingDefaults {\n  maxPicturesDefault=20,\n  notifyChannels=[PUSH,EMAIL],\n  reminderHoursBefore=24\n}
 deactivate settings

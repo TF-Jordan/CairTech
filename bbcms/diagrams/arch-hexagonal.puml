@@ -41,7 +41,7 @@ package "bbcms" #F0F0FF {
     }
 
     package "shared/" #F0F0F0 {
-        component [BaseEntity\nAuditTrail\nMultiTenantSupport\nDomainEventBus\nApiErrorResponse\nPagedResponse] as shared
+        component [BaseEntity\nAuditTrail\nDomainEventBus\nApiErrorResponse\nPagedResponse] as shared
     }
 
     package "config/" #F0F0F0 {

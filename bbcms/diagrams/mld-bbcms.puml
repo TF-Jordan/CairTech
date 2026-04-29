@@ -7,9 +7,6 @@ title Modèle Logique de Données — bbcms (application autonome)
 entity "bbcms_user_account" as ua {
     * **id** : UUID <<PK>>
     --
-    tenant_id : UUID <<réservé multi-CHF>>
-    organization_id : UUID <<réservé>>
-    agency_id : UUID <<réservé>>
     * email : VARCHAR(150) <<UNIQUE>>
     * password_hash : VARCHAR(255)
     phone : VARCHAR(20)
@@ -110,8 +107,6 @@ entity "bbcms_domain_event" as evt_log {
 entity "bbcms_membership_request" as mreq {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * user_account_id : UUID <<FK>>
     * requested_type : VARCHAR(20)
     bible_club_id : UUID <<FK>>
@@ -132,8 +127,6 @@ entity "bbcms_membership_request" as mreq {
 entity "bbcms_bible_club" as bbc {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * name : VARCHAR(150)
     profile : TEXT
     school_name : VARCHAR(150)
@@ -154,8 +147,6 @@ entity "bbcms_bible_club" as bbc {
 entity "bbcms_level" as lvl {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * bible_club_id : UUID <<FK>>
     * name : VARCHAR(50)
     profile : TEXT
@@ -173,8 +164,6 @@ entity "bbcms_level" as lvl {
 entity "bbcms_member" as mem {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     bible_club_id : UUID <<FK>>
     level_id : UUID <<FK>>
     user_account_id : UUID <<FK>>
@@ -210,8 +199,6 @@ entity "bbcms_member_department" as md {
 entity "bbcms_leadership_assignment" as lass {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * member_id : UUID <<FK>>
     * position : VARCHAR(40)
     scope_bible_club_id : UUID <<FK>>
@@ -237,8 +224,6 @@ entity "bbcms_mentor_assignment" as ment {
 entity "bbcms_visitor" as vis {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * first_names : VARCHAR(100)
     next_names : VARCHAR(100)
     phone_number : VARCHAR(20)
@@ -255,8 +240,6 @@ entity "bbcms_visitor" as vis {
 entity "bbcms_meeting" as meet {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     bible_club_id : UUID <<FK>>
     level_id : UUID <<FK>>
     department : VARCHAR(20)
@@ -295,7 +278,6 @@ entity "bbcms_meeting_bbc_concerned" as mbc {
 entity "bbcms_meeting_presence" as mp {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * meeting_id : UUID <<FK>>
     member_id : UUID <<FK>>
     visitor_id : UUID <<FK>>
@@ -306,7 +288,6 @@ entity "bbcms_meeting_presence" as mp {
 entity "bbcms_meeting_picture" as mpic {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * meeting_id : UUID <<FK>>
     * file_id : UUID
     caption : VARCHAR(255)
@@ -316,8 +297,6 @@ entity "bbcms_meeting_picture" as mpic {
 entity "bbcms_event" as evt {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * title : VARCHAR(200)
     * type : VARCHAR(30)
     * planned_start_dt : TIMESTAMPTZ
@@ -339,7 +318,6 @@ entity "bbcms_event" as evt {
 entity "bbcms_event_participation" as ep {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * event_id : UUID <<FK>>
     member_id : UUID <<FK>>
     visitor_id : UUID <<FK>>
@@ -351,7 +329,6 @@ entity "bbcms_event_participation" as ep {
 entity "bbcms_event_picture" as epic {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * event_id : UUID <<FK>>
     * file_id : UUID
     caption : VARCHAR(255)
@@ -361,8 +338,6 @@ entity "bbcms_event_picture" as epic {
 entity "bbcms_evangelism_program" as evgp {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * title : VARCHAR(200)
     * type : VARCHAR(20)
     * objective_believers : INT
@@ -391,8 +366,6 @@ entity "bbcms_evangelism_program_bbc" as evgpb {
 entity "bbcms_evangelism_record" as evgr {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * program_id : UUID <<FK>>
     * date : DATE
     * nb_preached : INT
@@ -417,8 +390,6 @@ entity "bbcms_evangelism_record_participants" as evgrp {
 entity "bbcms_disciple_link" as dl {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * disciple_maker_member_id : UUID <<FK>>
     * disciple_member_id : UUID <<FK>>
     * date_assigned : DATE
@@ -429,8 +400,6 @@ entity "bbcms_disciple_link" as dl {
 entity "bbcms_discipleship_record" as dr {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * disciple_maker_member_id : UUID <<FK>>
     meeting_id : UUID <<FK>>
     * date_occurred : DATE
@@ -457,8 +426,6 @@ entity "bbcms_discipleship_present" as dp {
 entity "bbcms_prayer_chain" as pc {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * bible_club_id : UUID <<FK>>
     * title : VARCHAR(200)
     * date_start : DATE
@@ -469,7 +436,6 @@ entity "bbcms_prayer_chain" as pc {
 entity "bbcms_prayer_slot" as ps {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * prayer_chain_id : UUID <<FK>>
     intercessor_member_id : UUID <<FK>>
     * dt_start : TIMESTAMPTZ
@@ -488,8 +454,6 @@ entity "bbcms_intercessor_assignment" as ia {
 entity "bbcms_financial_contribution" as fc {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * bible_club_id : UUID <<FK>>
     * title : VARCHAR(200)
     description : TEXT
@@ -504,7 +468,6 @@ entity "bbcms_financial_contribution" as fc {
 entity "bbcms_contribution_line" as cl {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * contribution_id : UUID <<FK>>
     contributor_member_id : UUID <<FK>>
     contributor_name : VARCHAR(200)
@@ -517,8 +480,6 @@ entity "bbcms_contribution_line" as cl {
 entity "bbcms_attendance_score" as att {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * member_id : UUID <<FK>>
     bible_club_id : UUID <<FK>>
     level_id : UUID <<FK>>
@@ -533,7 +494,6 @@ entity "bbcms_attendance_score" as att {
 entity "bbcms_faithfulness_record" as fr {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * attendance_score_id : UUID <<FK>>
     member_id : UUID <<FK>>
     meeting_id : UUID <<FK>>
@@ -546,7 +506,6 @@ entity "bbcms_faithfulness_record" as fr {
 entity "bbcms_inactivity_watch" as iw {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * member_id : UUID <<FK>>
     last_seen_at : TIMESTAMPTZ
     consecutive_absences : INT
@@ -557,8 +516,6 @@ entity "bbcms_inactivity_watch" as iw {
 entity "bbcms_daily_verse_publication" as dv {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * title : VARCHAR(200)
     * reference : VARCHAR(50)
     * verse_text : TEXT
@@ -572,8 +529,6 @@ entity "bbcms_daily_verse_publication" as dv {
 entity "bbcms_special_announcement" as sa {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
-    * organization_id : UUID
     * title : VARCHAR(200)
     * content : TEXT
     image_file_id : UUID
@@ -586,7 +541,6 @@ entity "bbcms_special_announcement" as sa {
 entity "bbcms_bbc_reset_snapshot" as brs {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID
     * bible_club_id : UUID <<FK>>
     * year : INT
     * nb_members_before : INT

@@ -27,7 +27,7 @@ svc -> repoEvt : save(event)
 repoEvt -> db : INSERT INTO bbcms_event
 db --> repoEvt : OK
 
-svc -> repoMem : findAllActiveCHF(orgId)
+svc -> repoMem : findAllActiveMembers()
 repoMem --> svc : Flux<Member>
 
 svc -> notifPort : broadcastEventInvitation(\n  eventId, audience, channels)

@@ -5,7 +5,7 @@ skinparam componentStyle rectangle
 title Cartographie des modules internes de bbcms (application autonome)
 
 package "bbcms — modules transverses" #EEEEEE {
-    component [shared\n(BaseEntity, audit,\nDomainEventBus,\nmulti-tenant support)] as shared
+    component [shared\n(BaseEntity, audit,\nDomainEventBus)] as shared
     component [config\n(Configuration globale,\nLiquibase, Minio,\nQuartz scheduler)] as config
 }
 
