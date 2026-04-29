@@ -8,8 +8,8 @@ title Diagramme d'activité — Suivi de fidélité et participation
 start
 :Cron quotidien 02h00\nFaithfulnessScheduler;
 
-|bbcms-core|
-:Lire les paramètres\nvia settings-core :\n• seuil de fidélité (50 %)\n• seuil d'inactivité (90 j);
+|bbcms|
+:Lire les paramètres\nvia module Settings :\n• seuil de fidélité (50 %)\n• seuil d'inactivité (90 j);
 
 :Charger tous les Étudiants\nactifs de l'organisation;
 
@@ -50,7 +50,7 @@ partition "Détection des inactifs" {
 :Consulte le tableau de bord\n• % membres fidèles\n• liste des non-fidèles\n• évolution dans le temps;
 
 if (Action de relance ?) then (oui)
-    :Envoie un message ciblé\nvia notification-core;
+    :Envoie un message ciblé\nvia module Notification;
 endif
 
 stop

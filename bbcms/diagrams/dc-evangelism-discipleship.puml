@@ -3,7 +3,7 @@
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
-package "common-core" #EEEEEE {
+package "bbcms / shared" #EEEEEE {
     abstract class BaseEntity {
         # id : UUID
         # tenantId : UUID
@@ -17,7 +17,7 @@ package "common-core" #EEEEEE {
     }
 }
 
-package "bbcms-core / domain — Évangélisation & Discipulat" #FFF5FA {
+package "bbcms / domain — Évangélisation & Discipulat" #FFF5FA {
 
     class EvangelismProgram extends BaseEntity {
         - title : String

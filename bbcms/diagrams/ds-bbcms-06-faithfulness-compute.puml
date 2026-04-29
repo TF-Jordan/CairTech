@@ -15,7 +15,7 @@ participant "MeetingRepository" as repoMeet
 participant "InactivityWatchRepository" as repoIw
 participant "NotificationPort" as notifPort
 database "PostgreSQL" as db
-participant "OutboxEvent" as outbox
+participant "DomainEventBus" as outbox
 
 sched -> svcAtt : computeFaithfulnessForAll(orgId)
 activate svcAtt
@@ -49,7 +49,7 @@ loop pour chaque student
     svcAtt -> repoAtt : save(score)
 end
 
-svcAtt -> outbox : insertOutboxEvent(FAITHFULNESS_COMPUTED,\n  {orgId, computedAt, nbStudents})
+svcAtt -> outbox : publishDomainEvent(FAITHFULNESS_COMPUTED,\n  {orgId, computedAt, nbStudents})
 deactivate svcAtt
 
 == Désinscription automatique des inactifs ==
@@ -68,7 +68,7 @@ loop pour chaque inactivité
 
         svcMem -> notifPort : notifyMemberAndLeader(\n  memberId, "Désinscription pour inactivité")
 
-        svcMem -> outbox : insertOutboxEvent(MEMBER_REMOVED_INACTIVITY,\n  {memberId, lastSeenAt})
+        svcMem -> outbox : publishDomainEvent(MEMBER_REMOVED_INACTIVITY,\n  {memberId, lastSeenAt})
     end
 end
 deactivate svcMem

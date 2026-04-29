@@ -12,7 +12,7 @@ participant "PrayerChainRepository" as repoPc
 participant "MemberRepository" as repoMem
 participant "NotificationPort" as notifPort
 database "PostgreSQL" as db
-participant "OutboxEvent" as outbox
+participant "DomainEventBus" as outbox
 
 == Phase 1 : Création et planification de la chaîne ==
 
@@ -31,7 +31,7 @@ repoMem --> svc : List<Member>
 
 svc -> notifPort : notifyIntercessors(\n  chainId, audience, "Couvrez un créneau")
 
-svc -> outbox : insertOutboxEvent(PRAYER_CHAIN_OPENED,\n  {chainId, bibleClubId})
+svc -> outbox : publishDomainEvent(PRAYER_CHAIN_OPENED,\n  {chainId, bibleClubId})
 
 svc --> ctrl : PrayerChain{id, slots[]}
 deactivate svc
@@ -53,7 +53,7 @@ svc -> svc : slot.cover()\n(covered=true,\n intercessorMemberId set)
 svc -> repoPc : save(slot)
 repoPc -> db : UPDATE bbcms_prayer_slot
 
-svc -> outbox : insertOutboxEvent(PRAYER_SLOT_COVERED,\n  {slotId, chainId, memberId})
+svc -> outbox : publishDomainEvent(PRAYER_SLOT_COVERED,\n  {slotId, chainId, memberId})
 
 svc --> ctrl : PrayerSlot{covered=true}
 deactivate svc
@@ -63,7 +63,7 @@ deactivate ctrl
 == Phase 3 : Clôture automatique en fin de période ==
 
 note over svc, repoPc
-  Le scheduler de bbcms-core ferme
+  Le scheduler de bbcms ferme
   automatiquement la chaîne quand
   dateEnd est dépassée et publie
   PRAYER_CHAIN_CLOSED.

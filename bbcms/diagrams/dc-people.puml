@@ -3,7 +3,7 @@
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
-package "common-core" #EEEEEE {
+package "bbcms / shared" #EEEEEE {
     abstract class BaseEntity {
         # id : UUID
         # tenantId : UUID
@@ -16,17 +16,11 @@ package "common-core" #EEEEEE {
         # version : Long
     }
 
-    class PartyRef {
-        - partyId : UUID
-        - partyType : String
-        - displayName : String
-    }
 }
 
-package "bbcms-core / domain — Personnes" #F5FFF5 {
+package "bbcms / domain — Personnes" #F5FFF5 {
 
     abstract class Member extends BaseEntity {
-        - actorRef : PartyRef
         - userAccountId : UUID
         - firstNames : String
         - nextNames : String
@@ -127,7 +121,6 @@ package "bbcms-core / domain — Personnes" #F5FFF5 {
 
     Member --> MemberStatus
     Member --> Gender
-    Member --> PartyRef
     Student --> Department
     Student --> LeadershipPosition
     Professional --> ProfessionalPosition

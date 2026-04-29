@@ -3,9 +3,9 @@
 skinparam componentStyle rectangle
 skinparam defaultTextAlignment center
 
-title Architecture Hexagonale — bbcms-core dans la plateforme CHF-OPS
+title Architecture Hexagonale — bbcms (application autonome)
 
-package "bbcms-core" #F0F0FF {
+package "bbcms" #F0F0FF {
 
     package "domain/" #FFFFDD {
         component [BibleClub\nLevel\nMember\nNationalLeader\nProfessional\nMentor\nMeeting\nEvent\nAttendance\nEvangelismProgram\nEvangelismRecord\nDiscipleshipRecord\nPrayerChain\nFinancialContribution\nDailyVerse] as domain
@@ -18,32 +18,39 @@ package "bbcms-core" #F0F0FF {
     }
 
     package "application/" #DDFFDD {
-        interface "<<port/in>>\nManageUserAccountUseCase\nManageBibleClubUseCase\nManageMembershipUseCase\nManageMeetingUseCase\nManageEventUseCase\nRecordAttendanceUseCase\nManageEvangelismUseCase\nManageDiscipleshipUseCase\nManageIntercessionUseCase\nManageFinancialContribUseCase\nPublishDailyVerseUseCase\nResetBibleClubUseCase\nComputeFaithfulnessUseCase" as portIn
+        interface "<<port/in>>\nAuthenticationUseCase\nManageUserAccountUseCase\nManageRoleUseCase\nManageBibleClubUseCase\nManageMembershipUseCase\nManageMeetingUseCase\nManageEventUseCase\nRecordAttendanceUseCase\nManageEvangelismUseCase\nManageDiscipleshipUseCase\nManageIntercessionUseCase\nManageFinancialContribUseCase\nPublishDailyVerseUseCase\nResetBibleClubUseCase\nComputeFaithfulnessUseCase" as portIn
 
-        component [UserAccountService\nBibleClubService\nMembershipService\nMeetingService\nEventService\nAttendanceService\nFaithfulnessEngine\nEvangelismService\nDiscipleshipService\nIntercessionService\nFinancialContribService\nPublicationService\nResetService] as services
+        component [AuthenticationService\nUserAccountService\nRoleService\nBibleClubService\nMembershipService\nMeetingService\nEventService\nAttendanceService\nFaithfulnessEngine\nEvangelismService\nDiscipleshipService\nIntercessionService\nFinancialContribService\nPublicationService\nResetService] as services
 
-        interface "<<port/out>>\nUserAccountRepository\nBibleClubRepository\nMemberRepository\nMeetingRepository\nEventRepository\nAttendanceRepository\nEvangelismRepository\nDiscipleshipRepository\nFinancialContribRepository\nActorPort\nNotificationPort\nSettingsPort\nFilePort\nLocalSyncPort" as portOut
+        interface "<<port/out>>\nUserAccountRepository\nRoleRepository\nBibleClubRepository\nMemberRepository\nMeetingRepository\nEventRepository\nAttendanceRepository\nEvangelismRepository\nDiscipleshipRepository\nFinancialContribRepository\nFileStoragePort\nNotificationPort\nSettingsPort\nLocalSyncPort" as portOut
     }
 
     package "adapter/in/" #DDDDFF {
         component [WebController\n(Spring WebFlux)\nDTO / Mapper] as adapterInWeb
+        component [SecurityFilter\n(JWT, RBAC interne)] as secFilter
         component [MobileSyncController\n(REST + WebSocket)] as adapterInMobile
-        component [Scheduler\n(@Scheduled Quartz)] as adapterInSched
+        component [Scheduler\n(@Scheduled / Quartz)] as adapterInSched
     }
 
     package "adapter/out/" #FFDDDD {
         component [R2DBC Repositories\n(persistence — online DB)] as adapterOutPersist
         component [SQLite/Room Repositories\n(persistence — offline cache)] as adapterOutLocal
-        component [ActorAdapter\nNotificationAdapter\nSettingsAdapter\nFileAdapter] as adapterOutAdapters
-        component [BbcmsEventConsumer\n(Kafka)] as adapterOutKafka
+        component [MinioFileStorageAdapter\n(implémente FileStoragePort)] as adapterOutFile
+        component [PushNotificationAdapter (FCM/APNS)\nEmailNotificationAdapter (SMTP)\nSmsNotificationAdapter] as adapterOutNotif
+        component [InAppSettingsAdapter\n(propriétés + table bbcms_setting)] as adapterOutSettings
+    }
+
+    package "shared/" #F0F0F0 {
+        component [BaseEntity\nAuditTrail\nMultiTenantSupport\nDomainEventBus\nApiErrorResponse\nPagedResponse] as shared
     }
 
     package "config/" #F0F0F0 {
-        component [BbcmsCoreConfiguration\nBbcmsPermissionRegistrar\nBbcmsLiquibaseConfig] as config
+        component [BbcmsConfiguration\nSecurityConfiguration\nLiquibaseConfig\nMinioConfig\nNotificationConfig] as config
     }
 }
 
-' Flux
+' Flux internes
+secFilter -down-> adapterInWeb : injecte SecurityContext
 adapterInWeb -down-> portIn : implémente
 adapterInMobile -down-> portIn : implémente
 adapterInSched -down-> portIn : déclenche
@@ -52,34 +59,24 @@ services -down-> domain : utilise
 services -down-> portOut : appelle
 portOut -down-> adapterOutPersist : implémenté par
 portOut -down-> adapterOutLocal : implémenté par
-portOut -down-> adapterOutAdapters : implémenté par
+portOut -down-> adapterOutFile : implémenté par
+portOut -down-> adapterOutNotif : implémenté par
+portOut -down-> adapterOutSettings : implémenté par
 
-' Cores externes
-cloud "actor-core" as actorCore
-cloud "notification-core" as notifCore
-cloud "settings-core" as settingsCore
-cloud "file-core" as fileCore
-cloud "kernel-core" as kernelCore
-cloud "roles-core" as rolesCore
-cloud "auth-core" as authCore
-cloud "common-core" as commonCore
-queue "Kafka\nchf.events.business" as kafka
+domain .right.> shared : <<extends BaseEntity>>
+adapterInWeb .right.> shared : <<PagedResponse>>\n<<ApiErrorResponse>>
 
-' Connexions
-adapterOutAdapters -down-> actorCore : <<port/out synchrone>>
-adapterOutAdapters -down-> notifCore : <<port/out synchrone>>\npush / e-mail / SMS
-adapterOutAdapters -down-> settingsCore : <<port/out synchrone>>
-adapterOutAdapters -down-> fileCore : <<port/out synchrone>>
+' Infrastructures externes (technologies)
+database "PostgreSQL\n(schéma bbcms)" as pg
+database "SQLite\n(client mobile/desktop)" as sqlite
+cloud "MinIO / S3\n(bucket bbcms-media)" as minio
+cloud "Firebase FCM / APNS" as fcm
+cloud "SMTP" as smtp
 
-domain .up.> commonCore : <<extends BaseEntity>>\n<<utilise PartyRef>>
-adapterInWeb .right.> rolesCore : <<@Secured>> vérification\ntransparente via filtre
-adapterInWeb .left.> commonCore : <<PagedResponse>>\n<<ApiErrorResponse>>
-adapterInMobile .right.> authCore : token JWT\n(login mobile)
-adapterOutPersist -down-> kernelCore : <<outbox transactionnel>>\n<<audit trail>>\n<<tenant routing>>
-
-adapterOutKafka <-left- kafka : consume\nACTOR_UPDATED\nNOTIFICATION_DELIVERED
-kernelCore -right-> kafka : relay outbox
-kafka -down-> notifCore : MEETING_PLANNED\nEVENT_PLANNED
-kafka -down-> actorCore : MEMBER_ADDED\nLEADER_ASSIGNED
+adapterOutPersist -down-> pg : R2DBC
+adapterOutLocal -down-> sqlite : Room / SQLite JDBC
+adapterOutFile -down-> minio : S3 SDK
+adapterOutNotif -down-> fcm : push
+adapterOutNotif -down-> smtp : e-mail
 
 @enduml

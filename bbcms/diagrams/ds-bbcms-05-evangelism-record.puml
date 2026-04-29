@@ -10,7 +10,7 @@ participant "EvangelismService" as svc
 participant "EvangelismRepository" as repoEvg
 participant "MemberRepository" as repoMem
 database "PostgreSQL" as db
-participant "OutboxEvent" as outbox
+participant "DomainEventBus" as outbox
 
 == Phase 1 : Création de la campagne ==
 
@@ -25,7 +25,7 @@ svc -> repoEvg : save(program)
 repoEvg -> db : INSERT bbcms_evangelism_program\n+ INSERT bbcms_evangelism_program_dates\n+ INSERT bbcms_evangelism_program_bbc
 db --> repoEvg : OK
 
-svc -> outbox : insertOutboxEvent(EVANGELISM_PROGRAM_CREATED,\n  {programId, type, objectiveBelievers})
+svc -> outbox : publishDomainEvent(EVANGELISM_PROGRAM_CREATED,\n  {programId, type, objectiveBelievers})
 
 svc --> ctrl : EvangelismProgram{id, status=ONGOING}
 deactivate svc
@@ -63,7 +63,7 @@ svc -> svc : program.totalPreached += record.nbPreached\nprogram.totalSaved += r
 svc -> repoEvg : save(program)
 repoEvg -> db : UPDATE bbcms_evangelism_program
 
-svc -> outbox : insertOutboxEvent(EVANGELISM_RECORDED,\n  {recordId, programId, nbBelieved})
+svc -> outbox : publishDomainEvent(EVANGELISM_RECORDED,\n  {recordId, programId, nbBelieved})
 
 svc --> ctrl : EvangelismRecord{id} +\n  EvangelismProgram{percentageRealization}
 deactivate svc

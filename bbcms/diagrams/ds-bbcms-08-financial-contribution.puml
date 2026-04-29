@@ -11,7 +11,7 @@ participant "FinancialContribService" as svc
 participant "FinancialContribRepository" as repo
 participant "NotificationPort" as notifPort
 database "PostgreSQL" as db
-participant "OutboxEvent" as outbox
+participant "DomainEventBus" as outbox
 
 == Phase 1 : Création de la contribution ==
 
@@ -25,7 +25,7 @@ svc -> repo : save(contribution)
 repo -> db : INSERT bbcms_financial_contribution
 db --> repo : OK
 
-svc -> outbox : insertOutboxEvent(CONTRIBUTION_OPENED,\n  {contributionId, bibleClubId,\n   objectiveAmount})
+svc -> outbox : publishDomainEvent(CONTRIBUTION_OPENED,\n  {contributionId, bibleClubId,\n   objectiveAmount})
 
 svc --> ctrl : FinancialContribution{id, status=OPEN}
 deactivate svc
@@ -50,7 +50,7 @@ svc -> svc : contribution.addLine(line)\ntotalContributed += line.amount
 svc -> repo : save(line + contribution)
 repo -> db : INSERT bbcms_contribution_line\n+ UPDATE bbcms_financial_contribution
 
-svc -> outbox : insertOutboxEvent(CONTRIBUTION_RECORDED,\n  {contributionId, lineId, amount,\n   percentageReached})
+svc -> outbox : publishDomainEvent(CONTRIBUTION_RECORDED,\n  {contributionId, lineId, amount,\n   percentageReached})
 
 alt percentageReached >= 100
     svc -> notifPort : notifyLeaders(\n  "Objectif atteint pour " + title)

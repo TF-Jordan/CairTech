@@ -18,7 +18,7 @@ RETRACTED --> [*]
 PUBLISHED --> [*] : (lecture seule)
 
 note right of SCHEDULED
-  Le scheduler bbcms-core
+  Le scheduler bbcms
   bascule automatiquement
   SCHEDULED → PUBLISHED
   à publishDate et publie

@@ -2,15 +2,14 @@
 !theme plain
 skinparam linetype ortho
 
-title Modèle Logique de Données — bbcms-core (schéma tenant)
+title Modèle Logique de Données — bbcms (application autonome)
 
 entity "bbcms_user_account" as ua {
     * **id** : UUID <<PK>>
     --
-    * tenant_id : UUID <<FK kernel>>
-    * organization_id : UUID
-    agency_id : UUID
-    * actor_id : UUID <<FK actor-core>>
+    tenant_id : UUID <<réservé multi-CHF>>
+    organization_id : UUID <<réservé>>
+    agency_id : UUID <<réservé>>
     * email : VARCHAR(150) <<UNIQUE>>
     * password_hash : VARCHAR(255)
     phone : VARCHAR(20)
@@ -33,6 +32,79 @@ entity "bbcms_user_account" as ua {
     * updated_by : UUID
     * updated_at : TIMESTAMPTZ
     * version : BIGINT
+}
+
+entity "bbcms_role" as role {
+    * **id** : UUID <<PK>>
+    --
+    * name : VARCHAR(50) <<UNIQUE>>
+    description : VARCHAR(255)
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_permission" as perm {
+    * **code** : VARCHAR(80) <<PK>>
+    description : VARCHAR(255)
+}
+
+entity "bbcms_role_permission" as rp {
+    * **role_id** : UUID <<PK,FK>>
+    * **permission_code** : VARCHAR(80) <<PK,FK>>
+}
+
+entity "bbcms_user_role_assignment" as ura {
+    * **id** : UUID <<PK>>
+    --
+    * user_account_id : UUID <<FK>>
+    * role_id : UUID <<FK>>
+    scope_bible_club_id : UUID <<FK>>
+    * active : BOOLEAN
+    * created_by : UUID
+    * created_at : TIMESTAMPTZ
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+    * version : BIGINT
+}
+
+entity "bbcms_password_reset_token" as prt {
+    * **id** : UUID <<PK>>
+    --
+    * user_account_id : UUID <<FK>>
+    * token : VARCHAR(120) <<UNIQUE>>
+    * expires_at : TIMESTAMPTZ
+    * used : BOOLEAN
+}
+
+entity "bbcms_activation_token" as act {
+    * **id** : UUID <<PK>>
+    --
+    * user_account_id : UUID <<FK>>
+    * token : VARCHAR(120) <<UNIQUE>>
+    * expires_at : TIMESTAMPTZ
+    * used : BOOLEAN
+}
+
+entity "bbcms_setting" as cfg {
+    * **key** : VARCHAR(100) <<PK>>
+    --
+    * value : TEXT
+    description : VARCHAR(255)
+    * updated_by : UUID
+    * updated_at : TIMESTAMPTZ
+}
+
+entity "bbcms_domain_event" as evt_log {
+    * **id** : UUID <<PK>>
+    --
+    * type : VARCHAR(80)
+    * payload_json : JSONB
+    * created_at : TIMESTAMPTZ
+    processed : BOOLEAN
+    processed_at : TIMESTAMPTZ
 }
 
 entity "bbcms_membership_request" as mreq {
@@ -106,7 +178,6 @@ entity "bbcms_member" as mem {
     bible_club_id : UUID <<FK>>
     level_id : UUID <<FK>>
     user_account_id : UUID <<FK>>
-    * actor_id : UUID
     * member_kind : VARCHAR(20) <<STUDENT/PROFESSIONAL/MENTOR/NATIONAL_LEADER>>
     * first_names : VARCHAR(100)
     * next_names : VARCHAR(100)
@@ -527,6 +598,12 @@ entity "bbcms_bbc_reset_snapshot" as brs {
 
 ' Relations
 ua ||--o{ mreq : user_account_id
+ua ||--o{ ura : user_account_id
+ua ||--o{ prt : user_account_id
+ua ||--o{ act : user_account_id
+role ||--o{ ura : role_id
+role ||--o{ rp : role_id
+perm ||--o{ rp : permission_code
 bbc ||--o{ lvl : bible_club_id
 bbc ||--o{ mem : bible_club_id
 lvl ||--o{ mem : level_id

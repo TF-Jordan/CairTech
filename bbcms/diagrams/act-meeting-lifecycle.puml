@@ -18,7 +18,7 @@ endif
 :Renseigne titre, date/heure planifiée,\nsalle, professeur (si académique),\nnb max de photos;
 :Soumet la planification;
 
-|bbcms-core|
+|bbcms|
 :Vérifie les droits du leader\nsur ce scope;
 if (Autorisé ?) then (non)
     :HTTP 403;
@@ -30,13 +30,13 @@ endif
 
 :Persiste Meeting (status=PLANNED);
 :Détermine l'audience éligible;
-:Programme les notifications\nvia notification-core\n(rappel 24 h avant + alarme heure J);
+:Programme les notifications\nvia module Notification\n(rappel 24 h avant + alarme heure J);
 :Publie MEETING_PLANNED;
 
 |Membres éligibles|
 :Reçoivent la notification\nde planification;
 
-|notification-core|
+|module Notification|
 :À H-24h envoie rappel;
 :À H envoie alarme\n« la réunion commence »;
 
@@ -46,7 +46,7 @@ endif
 
 :À la fin, saisit :\n• heures réelles,\n• présences (membres + visiteurs),\n• résumé de l'enseignement,\n• nombre de croyants;
 
-|bbcms-core|
+|bbcms|
 if (nb photos > maxPictures ?) then (oui)
     :Erreur 400 — Trop de photos;
     |Leader|
@@ -58,7 +58,7 @@ endif
 :Stocke MeetingPresence,\nMeetingPicture, summary;
 :status = RECORDED;
 
-|bbcms-core|
+|bbcms|
 partition "Mise à jour participation" {
     :Pour chaque membre présent,\n+1 sur AttendanceScore;
     :Source = MeetingType\n(CLASS / BBC / JOINT…);

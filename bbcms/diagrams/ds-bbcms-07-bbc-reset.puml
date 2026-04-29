@@ -14,7 +14,7 @@ participant "MeetingRepository" as repoMeet
 participant "EvangelismRepository" as repoEvg
 participant "FilePort\n<<port/out>>" as filePort
 database "PostgreSQL" as db
-participant "OutboxEvent" as outbox
+participant "DomainEventBus" as outbox
 
 nat -> ctrl : POST /api/v1/bbcms/bible-clubs/{id}/reset\n{ academicYear, transferRules }
 activate ctrl
@@ -72,8 +72,8 @@ svcReset -> svcReset : bbc.status = ACTIVE
 svcReset -> repoBbc : save(bbc)
 repoBbc -> db : UPDATE bbcms_bible_club
 
-svcReset -> outbox : insertOutboxEvent(BBC_RESET,\n  {bibleClubId, year, nbMembersBefore,\n   nbFaithfulBefore, archiveFileId})
-outbox -> db : INSERT kernel.outbox_event
+svcReset -> outbox : publishDomainEvent(BBC_RESET,\n  {bibleClubId, year, nbMembersBefore,\n   nbFaithfulBefore, archiveFileId})
+outbox -> db : INSERT bbcms_domain_event
 
 svcReset --> ctrl : BibleClubResetSnapshot
 deactivate svcReset

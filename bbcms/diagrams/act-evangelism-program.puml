@@ -11,10 +11,10 @@ start
 :Définit l'objectif\n(nb croyants visés);
 :Sélectionne les BBC concernés\net la liste des dates;
 
-|bbcms-core|
+|bbcms|
 :Persiste EvangelismProgram\n(status = ONGOING);
 :Publie EVANGELISM_PROGRAM_CREATED;
-:Notifie via notification-core\nles BBC concernés;
+:Notifie via module Notification\nles BBC concernés;
 
 |Membres évangélistes|
 :Le jour J, partent prêcher;
@@ -23,7 +23,7 @@ start
 repeat
     :Saisit un compte rendu\n(EvangelismRecord) :\n• date,\n• participants présents,\n• nb prêchés,\n• nb croyants,\n• nb encouragés,\n• nb tracts distribués,\n• contacts sauvés,\n• défis et notes;
 
-    |bbcms-core|
+    |bbcms|
     if (date ∈ programme.dates ?) then (non)
         :Erreur 400\n— date hors programme;
         |Leader Évangélisation & Discipulat|
@@ -41,7 +41,7 @@ repeat while (autres comptes rendus ?) is (oui)
 |Leader Évangélisation & Discipulat|
 :Clôture le programme;
 
-|bbcms-core|
+|bbcms|
 :status = CLOSED;
 :Calcule le pourcentage\nde réalisation\n(totalSaved / objective × 100);
 

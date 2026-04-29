@@ -4,6 +4,7 @@ left to right direction
 skinparam actorStyle awesome
 skinparam packageStyle rectangle
 
+actor "Administrateur\n(super-admin technique)" as admin
 actor "Visiteur / Utilisateur\n(non encore membre)" as visitor
 actor "Membre simple\n(Étudiant)" as member
 actor "Professionnel" as pro
@@ -17,7 +18,22 @@ actor "Leader Financier" as finLeader
 actor "Leader Daily Verse" as dvLeader
 actor "Leader National CHF\n(BOT / Président / VP / SG)" as nationalLeader
 
-rectangle "bbcms-core" {
+rectangle "bbcms (application autonome)" {
+
+    package "Authentification & Sécurité" {
+        usecase "Se connecter\n(login email + mot de passe)" as UC_AUTH_LOGIN
+        usecase "Se déconnecter" as UC_AUTH_LOGOUT
+        usecase "Rafraîchir le token\nJWT" as UC_AUTH_REFRESH
+        usecase "Réinitialiser le\nmot de passe" as UC_AUTH_RESET
+        usecase "Activer le compte\n(via lien e-mail)" as UC_AUTH_ACTIVATE
+        usecase "Changer son mot\nde passe" as UC_AUTH_CHPWD
+    }
+
+    package "Gestion des rôles\n& permissions (RBAC interne)" {
+        usecase "Définir / éditer\nun rôle" as UC_RBAC_ROLE
+        usecase "Assigner un rôle\nà un utilisateur" as UC_RBAC_ASSIGN
+        usecase "Consulter les\npermissions d'un rôle" as UC_RBAC_VIEW
+    }
 
     package "Comptes & Inscriptions" {
         usecase "Créer un compte\nutilisateur" as UC_ACC_CREATE
@@ -97,6 +113,23 @@ rectangle "bbcms-core" {
     }
 }
 
+' --- Authentification (tous les utilisateurs déjà inscrits) ---
+visitor --> UC_AUTH_LOGIN
+member --> UC_AUTH_LOGIN
+member --> UC_AUTH_LOGOUT
+member --> UC_AUTH_REFRESH
+member --> UC_AUTH_CHPWD
+member --> UC_AUTH_RESET
+visitor --> UC_AUTH_RESET
+visitor --> UC_AUTH_ACTIVATE
+
+' --- Administrateur (super-admin) ---
+admin --> UC_RBAC_ROLE
+admin --> UC_RBAC_ASSIGN
+admin --> UC_RBAC_VIEW
+nationalLeader --> UC_RBAC_ASSIGN
+nationalLeader --> UC_RBAC_VIEW
+
 ' --- Visiteur ---
 visitor --> UC_ACC_CREATE
 visitor --> UC_REG_REQUEST
@@ -170,29 +203,39 @@ nationalLeader --> UC_PUB_INFO
 nationalLeader --> UC_DASH_NATIONAL
 
 ' --- Includes / Extends ---
+UC_AUTH_LOGIN ..> UC_AUTH_REFRESH : <<extend>>\n[token expiré]
+UC_REG_REQUEST ..> UC_ACC_CREATE : <<include>>
+UC_AUTH_ACTIVATE ..> UC_AUTH_LOGIN : <<extend>>
 UC_MEET_PLAN ..> UC_MEET_NOTIFY : <<include>>
 UC_MEET_RECORD ..> UC_MEET_DETAIL : <<include>>
 UC_REG_APPROVE ..> UC_REG_ASSIGN : <<include>>
 UC_FAITH_COMPUTE ..> UC_FAITH_REMOVE : <<extend>>\n[absences > seuil]
 
-' --- Acteurs externes (autres cores / systèmes) ---
-rectangle "actor-core" as ACT <<external>>
-rectangle "settings-core" as SET <<external>>
-rectangle "file-core" as FIL <<external>>
-rectangle "notification-core" as NOT <<external>>
-rectangle "roles-core" as ROL <<external>>
+' --- Modules techniques internes (sollicités par les cas d'utilisation) ---
+rectangle "Module Storage\n(MinIO)" as MOD_STORAGE
+rectangle "Module Notification\n(Push / Email / SMS)" as MOD_NOTIF
+rectangle "Module Settings\n(seuils, max photos…)" as MOD_SET
+rectangle "Module Authorization\n(RBAC interne)" as MOD_RBAC
 
-UC_ACC_CREATE ..> ACT : <<port/out>>\nrésolution PartyRef
-UC_MEET_NOTIFY ..> NOT : <<port/out>>\npush / e-mail
-UC_BBC_GOAL ..> SET : <<port/out>>\nlecture seuils\n(faithfulness, max photos)
-UC_MEET_DETAIL ..> FIL : <<port/out>>\nstockage photos
+UC_MEET_NOTIFY ..> MOD_NOTIF : <<port/out>>\npush / e-mail
+UC_PUB_DV ..> MOD_NOTIF : <<port/out>>\nbroadcast
+UC_BBC_GOAL ..> MOD_SET : <<port/out>>\nlecture seuils\n(faithfulness, max photos)
+UC_FAITH_COMPUTE ..> MOD_SET : <<port/out>>\nseuils faithfulness
+UC_MEET_DETAIL ..> MOD_STORAGE : <<port/out>>\nstockage photos\n(MinIO)
+UC_PUB_DV ..> MOD_STORAGE : <<port/out>>\nimage daily verse
+UC_BBC_RESET ..> MOD_STORAGE : <<port/out>>\narchive annuelle
 
-note bottom of ROL
-  roles-core gère toute
-  la logique RBAC.
-  bbcms-core annote ses
-  endpoints avec
-  @Secured("bbcms:...")
+note bottom of MOD_RBAC
+  Module **interne** à bbcms.
+  Toute la logique RBAC est portée
+  par le module authorization de
+  l'application : les contrôleurs
+  sont annotés @Secured("bbcms:...")
+  et un Aspect lit Role/Permission
+  depuis la base bbcms.
 end note
+
+UC_RBAC_ROLE ..> MOD_RBAC
+UC_RBAC_ASSIGN ..> MOD_RBAC
 
 @enduml

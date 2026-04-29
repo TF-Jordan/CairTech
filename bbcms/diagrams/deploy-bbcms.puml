@@ -2,7 +2,7 @@
 !theme plain
 skinparam nodeStyle rectangle
 
-title Diagramme de déploiement — bbcms-core sur la plateforme CHF-OPS
+title Diagramme de déploiement — bbcms (application autonome)
 
 node "Client mobile" as clientMobile {
     component [App Android / iOS\n(Flutter / React Native)] as mobileApp
@@ -20,61 +20,79 @@ node "Client Web" as clientWeb {
     component [Navigateur\n(Angular / React)] as browser
 }
 
-node "Load Balancer" as lb {
+node "Reverse Proxy" as lb {
     component [Nginx / Traefik\n(HTTPS, WebSocket)] as proxy
 }
 
 node "Application Server" as appServer {
     node "JVM — Spring Boot (WebFlux)" as jvm {
-        component [kernel-core\n(Security filter,\nTenant routing,\nOutbox scheduler)] as kernel
-        component [auth-core] as authC
-        component [roles-core] as rolesC
-        component [actor-core] as actorC
-        component [organization-core] as orgC
-        component [settings-core] as settC
-        component [file-core] as fileC
-        component [notification-core] as notifC
-        component [**bbcms-core**] as bbcmsC #7986CB
-        component [common-core] as commonC
+        component [bbcms — adapter/in/web\n(REST controllers)] as adapterWeb
+        component [bbcms — adapter/in/mobile\n(Sync REST + WebSocket)] as adapterMobile
+        component [bbcms — adapter/in/scheduler\n(Quartz : faithfulness,\ninactivité, reset annuel)] as adapterSched
+
+        component [bbcms — application/service\n(use cases : auth, BBC,\nmeeting, event, evangelism,\ndiscipleship, intercession,\nfinance, publication)] as appLayer
+
+        component [bbcms — domain] as domLayer
+
+        component [bbcms — security\n(JWT issuer, SecurityFilter,\nRBAC, password hashing)] as secLayer
+
+        component [bbcms — adapter/out/persistence\n(R2DBC + SQLite mappers)] as persistLayer
+
+        component [bbcms — adapter/out/storage\n(MinioFileStorageAdapter)] as storageLayer
+
+        component [bbcms — adapter/out/notification\n(FCM / APNS / SMTP / Twilio)] as notifLayer
+
+        component [bbcms — shared\n(BaseEntity, audit,\nDomainEventBus)] as sharedLayer
     }
 }
 
-node "Message Broker" as broker {
-    component [Apache Kafka\nTopic: chf.events.business] as kafka
-}
-
 database "PostgreSQL" as pg {
-    storage "Schema: tenant_001" as s1
-    storage "Schema: tenant_002" as s2
-    storage "Schema: kernel\n(outbox_event, audit)" as sk
+    storage "Schéma bbcms\n(bbcms_user_account,\nbbcms_bible_club,\nbbcms_meeting, …)" as bbcmsSchema
+    storage "Schéma audit\n(audit_log,\ndomain_event)" as auditSchema
 }
 
 database "MinIO / S3" as minio {
-    storage "Bucket: bbcms-media\n(photos meeting,\nphotos events,\nattestations,\ndaily verse images)" as bucket
+    storage "Bucket: bbcms-media\n(photos meeting,\nphotos events,\nattestations,\nimages daily verse)" as bucket
 }
 
 node "Push & E-mail providers" as pushSvc {
-    component [Firebase FCM\nAPNS] as fcm
-    component [SMTP\n(Sendgrid)] as smtp
+    component [Firebase FCM / APNS] as fcm
+    component [SMTP (Sendgrid)] as smtp
+    component [SMS gateway\n(Twilio / Orange API)] as sms
 }
 
 mobileApp -down-> proxy : HTTPS / WSS
 desktopApp -down-> proxy : HTTPS / WSS
 browser -down-> proxy : HTTPS
 
-proxy -down-> jvm : HTTP (reverse proxy)
+proxy -down-> adapterWeb : HTTP (reverse proxy)
+proxy -down-> adapterMobile : WSS
 
-kernel -down-> pg : R2DBC\n(tenant routing)
-kernel -right-> kafka : Outbox relay
+adapterWeb --> secLayer : SecurityFilter (JWT)
+adapterMobile --> secLayer : SecurityFilter (JWT)
+adapterWeb --> appLayer
+adapterMobile --> appLayer
+adapterSched --> appLayer
+appLayer --> domLayer
+appLayer --> persistLayer
+appLayer --> storageLayer
+appLayer --> notifLayer
+appLayer --> sharedLayer
 
-bbcmsC -down-> pg : R2DBC
-bbcmsC -right-> kafka : Events (via outbox)
-bbcmsC -down-> minio : via file-core
+persistLayer -down-> pg : R2DBC
+storageLayer -down-> minio : S3 SDK
+notifLayer -down-> fcm : push
+notifLayer -down-> smtp : e-mail
+notifLayer -down-> sms : SMS
 
-notifC -down-> fcm : push notif\n(meeting / event reminders)
-notifC -down-> smtp : e-mail\n(activation, reset, daily verse)
-
-kafka -down-> notifC : consume MEETING_PLANNED\nconsume EVENT_PLANNED
-kafka -down-> bbcmsC : consume NOTIFICATION_DELIVERED\nconsume ACTOR_UPDATED
+note right of jvm
+  bbcms est packagé en **un seul jar**
+  Spring Boot. Tous les modules
+  (authentication, authorization,
+  identity, storage, notification,
+  settings) sont des **packages internes**
+  de l'application — il n'y a aucune
+  dépendance vers un autre micro-service.
+end note
 
 @enduml

@@ -9,13 +9,13 @@ actor "Leader BBC\n(ou Leader National)" as leader
 participant "WebController\n<<adapter/in>>" as ctrl
 participant "UserAccountService\n<<application/service>>" as svcUser
 participant "MembershipService\n<<application/service>>" as svcMem
-participant "ActorPort\n<<port/out>>" as actorPort
+participant "AuthenticationService\n<<application/service>>" as svcAuth
 participant "UserAccountRepository\n<<port/out>>" as repoUser
 participant "MembershipRequestRepository\n<<port/out>>" as repoReq
 participant "MemberRepository\n<<port/out>>" as repoMem
 participant "NotificationPort\n<<port/out>>" as notifPort
 database "PostgreSQL" as db
-participant "OutboxEvent\n<<kernel-core>>" as outbox
+participant "DomainEventBus\n<<bbcms / shared>>" as outbox
 
 == Phase 1 : Création du compte ==
 
@@ -30,16 +30,18 @@ repoUser -> db : SELECT count(*) FROM bbcms_user_account
 db --> repoUser : 0
 repoUser --> svcUser : false
 
-svcUser -> actorPort : registerOrResolve(email, profile)
-activate actorPort
-note right of actorPort
-  Création / récupération
-  de l'Actor dans actor-core,
-  puis retour PartyRef
-  (DS-S-01)
+svcUser -> svcAuth : hashPassword(plain)
+activate svcAuth
+note right of svcAuth
+  bbcms gère lui-même
+  l'authentification :
+  • hash BCrypt du mot de passe,
+  • génération d'un ActivationToken,
+  • envoi de l'e-mail d'activation
+    via le module Notification interne.
 end note
-actorPort --> svcUser : PartyRef{partyId, displayName}
-deactivate actorPort
+svcAuth --> svcUser : passwordHash + activationToken
+deactivate svcAuth
 
 svcUser -> svcUser : UserAccount.activate()\n(status = PENDING jusqu'à e-mail)
 svcUser -> repoUser : save(userAccount)
@@ -52,8 +54,8 @@ svcMem -> repoReq : save(MembershipRequest{status=PENDING})
 repoReq -> db : INSERT INTO bbcms_membership_request
 db --> repoReq : OK
 
-svcMem -> outbox : insertOutboxEvent(\n  MEMBERSHIP_REQUESTED,\n  {userAccountId, bibleClubId})
-outbox -> db : INSERT kernel.outbox_event
+svcMem -> outbox : publishDomainEvent(\n  MEMBERSHIP_REQUESTED,\n  {userAccountId, bibleClubId})
+outbox -> db : INSERT bbcms_domain_event
 deactivate svcMem
 
 svcUser --> ctrl : UserAccount{id, status=PENDING}
@@ -90,8 +92,8 @@ repoUser -> db : UPDATE bbcms_user_account SET user_type=...
 svcMem -> repoReq : save(MembershipRequest{status=APPROVED})
 repoReq -> db : UPDATE bbcms_membership_request
 
-svcMem -> outbox : insertOutboxEvent(MEMBER_ADDED,\n  {memberId, bibleClubId, levelId})
-outbox -> db : INSERT kernel.outbox_event
+svcMem -> outbox : publishDomainEvent(MEMBER_ADDED,\n  {memberId, bibleClubId, levelId})
+outbox -> db : INSERT bbcms_domain_event
 
 svcMem -> notifPort : notifyUser(userAccountId,\n  "Votre adhésion est approuvée")
 notifPort --> svcMem : queued

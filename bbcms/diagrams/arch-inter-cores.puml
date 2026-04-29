@@ -2,62 +2,72 @@
 !theme plain
 skinparam componentStyle rectangle
 
-title Cartographie des interactions bbcms-core ↔ autres cores
+title Cartographie des modules internes de bbcms (application autonome)
 
-' Cores transverses
-package "Transverse" #EEEEEE {
-    component [common-core] as common
-    component [kernel-core] as kernel
+package "bbcms — modules transverses" #EEEEEE {
+    component [shared\n(BaseEntity, audit,\nDomainEventBus,\nmulti-tenant support)] as shared
+    component [config\n(Configuration globale,\nLiquibase, Minio,\nQuartz scheduler)] as config
 }
 
-package "Identité & Accès" #E8F5E9 {
-    component [auth-core] as auth
-    component [roles-core] as roles
-    component [actor-core] as actor
+package "bbcms — Identité & Accès" #E8F5E9 {
+    component [authentication\n(JWT issuer,\nlogin / logout,\nrefresh, reset password)] as auth
+    component [authorization\n(RBAC interne :\nRole, Permission,\n@Secured filter)] as authz
+    component [identity\n(UserAccount,\nMembershipRequest,\nactivation e-mail)] as identity
 }
 
-package "Organisation" #FFF3E0 {
-    component [organization-core] as org
-    component [settings-core] as settings
+package "bbcms — Domaine fonctionnel" #E8EAF6 {
+    component [**bbcms / core**\n(BibleClub, Meeting,\nEvent, Evangelism,\nDiscipleship, Intercession,\nFinance, Publication,\nAttendance/Faithfulness)] as core #7986CB
 }
 
-package "Services" #E3F2FD {
-    component [file-core] as file
-    component [notification-core] as notif
+package "bbcms — Services techniques" #E3F2FD {
+    component [storage\n(FileStoragePort\n+ MinioAdapter)] as storage
+    component [notification\n(NotificationPort\n+ Push / Email / SMS\nadapters)] as notif
+    component [settings\n(seuils faithfulness,\nmax photos,\ndurées de cron)] as settings
+    component [sync\n(LocalSyncPort\n+ SQLite/Room offline)] as sync
 }
 
-' Nouveau core
-package "Vie Spirituelle (CHF)" #E8EAF6 {
-    component [**bbcms-core**] as bbcms #7986CB
-}
+' Infrastructures externes (technologies utilisées)
+database "PostgreSQL" as pg
+cloud "MinIO / S3" as minio
+cloud "Firebase FCM\nAPNS\nSMTP" as pushSmtp
+database "SQLite (client)" as sqlite
 
-queue "Kafka" as kafka
+' Le domaine fonctionnel utilise les modules transverses
+core ..> shared : <<extends>>\nBaseEntity, audit
+core ..> config : <<utilise>>\nQuartz scheduler
 
-' Relations synchrones (port/out)
-bbcms -down-> actor : <<port/out>>\nrésolution PartyRef\n(personne, leader)
-bbcms -down-> org : <<port/out>>\nstructure CHF / BBC / Niveau
-bbcms -down-> settings : <<port/out>>\nseuils faithfulness,\nmax photos / meeting,\nséquences
-bbcms -down-> file : <<port/out>>\nphotos, attestations,\nimages d'événements
-bbcms -down-> notif : <<port/out>>\npush meeting,\nrappels, alarmes
+' Sécurité : filtre transparent appliqué aux contrôleurs
+core ..> auth : <<implicite>>\nJWT validé via filtre
+core ..> authz : <<@Secured("bbcms:...")>>\nvérification transparente
+core --> identity : utilise UserAccount\npour rattacher Member
 
-' Relations implicites
-bbcms .up.> common : <<extends>>\nBaseEntity, PartyRef\nPagedResponse
-bbcms .up.> kernel : <<utilise>>\noutbox, audit,\ntenant routing
-bbcms ..> roles : <<@Secured>>\nvérification transparente\nvia filtre WebFlux
-bbcms ..> auth : <<implicite>>\nJWT validé par\nkernel-core filter
+' Le domaine appelle les ports techniques
+core --> storage : <<port/out>>\nstockage photos,\nattestations,\nimages publications
+core --> notif : <<port/out>>\npush meeting,\nrappels événements,\ndaily verse
+core --> settings : <<port/out>>\nlecture des seuils\net paramètres
+core --> sync : <<port/out>>\nréplication offline
 
-' Relations asynchrones (Kafka — bbcms publie)
-bbcms -right-> kafka : publie\nMEMBER_ADDED\nLEADER_ASSIGNED\nMEETING_PLANNED\nMEETING_RECORDED\nEVENT_PLANNED\nEVANGELISM_RECORDED\nFAITHFULNESS_COMPUTED\nBBC_RESET
+' Adaptateurs vers infrastructures
+storage --> minio : S3 SDK
+notif --> pushSmtp : FCM / SMTP / Twilio
+core --> pg : R2DBC
+sync --> sqlite : Room / SQLite JDBC
 
-kafka -right-> notif : consume\nMEETING_PLANNED\nEVENT_PLANNED\n(envoi notifications)
+' Bus d'événements interne (Spring ApplicationEvent)
+note right of shared
+  Communication asynchrone
+  **interne** via DomainEventBus
+  (Spring ApplicationEvent),
+  pas de broker externe.
 
-kafka -right-> actor : consume\nMEMBER_ADDED\nLEADER_ASSIGNED
-
-' Callbacks
-notif --> kafka : publie\nNOTIFICATION_DELIVERED\nNOTIFICATION_FAILED
-kafka --> bbcms : consume\nNOTIFICATION_DELIVERED
-
-actor --> kafka : publie\nACTOR_UPDATED
-kafka --> bbcms : consume\nACTOR_UPDATED
+  Événements typiques :
+  • MEMBER_ADDED
+  • MEETING_PLANNED
+  • MEETING_RECORDED
+  • EVENT_PLANNED
+  • EVANGELISM_RECORDED
+  • FAITHFULNESS_COMPUTED
+  • BBC_RESET
+end note
 
 @enduml

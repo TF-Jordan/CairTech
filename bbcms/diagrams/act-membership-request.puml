@@ -19,7 +19,7 @@ endif
 :Soumet la demande\n(MembershipRequest = PENDING);
 :Reçoit un e-mail d'activation;
 
-|bbcms-core|
+|bbcms|
 :Stocke UserAccount + MembershipRequest;
 :Publie événement\nMEMBERSHIP_REQUESTED;
 
@@ -31,11 +31,11 @@ if (Demande valide ?) then (oui)
     if (Étudiant ?) then (oui)
         :Vérifie / corrige le BBC\net le niveau;
         :Approuve la demande;
-        |bbcms-core|
+        |bbcms|
         :Crée Member (kind=STUDENT,\n status=ACTIVE);
     else (non — Professionnel)
         :Ajoute aux professionnels CHF\n(pas rattaché à un BBC);
-        |bbcms-core|
+        |bbcms|
         :Crée Member (kind=PROFESSIONAL);
     endif
 
@@ -50,7 +50,7 @@ else (non)
     |Leader BBC ou Leader National|
     :Saisit un motif de rejet;
     :Rejette la demande;
-    |bbcms-core|
+    |bbcms|
     :MembershipRequest = REJECTED;
     :Notifie l'utilisateur\n+ motif;
     |Visiteur|

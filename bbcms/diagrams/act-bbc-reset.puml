@@ -11,7 +11,7 @@ start
 :Définit les règles de transfert\n(L1 → L2, L7 → archivés…);
 :Confirme la réinitialisation;
 
-|bbcms-core|
+|bbcms|
 :Vérifie les droits\n(Leader National uniquement);
 if (Autorisé ?) then (non)
     :HTTP 403;
@@ -28,7 +28,7 @@ partition "1. Génération du snapshot annuel" {
     :Compter réunions tenues;
     :Agréger statistiques\nd'évangélisation;
     :Générer un PDF résumé;
-    :Stocker l'archive via file-core;
+    :Stocker l'archive via module Storage (MinIO);
     :Persister BibleClubResetSnapshot;
 }
 

@@ -2,77 +2,77 @@
 !theme plain
 skinparam componentStyle rectangle
 
-title Propagation du contexte Tenant / Organisation (CHF) / Agence (BibleClub)
+title Propagation du contexte de sécurité (User / BibleClub) dans bbcms
 
 actor "Leader BBC" as leader
 
-package "Mobile / Navigateur" #FAFAFA {
-    component [Session BBCMS\n(JWT contient tenantId,\norganizationId, userId,\nbibleClubId, roles[])] as client
+package "Mobile / Desktop / Navigateur" #FAFAFA {
+    component [Session BBCMS\n(JWT contient userId,\nbibleClubId, levelId,\nroles[], permissions[])] as client
 }
 
-package "API Gateway / kernel-core" #EEEEEE {
-    component [SecurityFilter\n<<WebFlux Filter>>] as filter
+package "bbcms — adapter/in" #EEEEEE {
+    component [SecurityFilter\n<<WebFlux Filter — module security>>] as filter
     note right of filter
-        Extrait du JWT :
-        • tenantId   (instance CHF)
-        • organizationId (CHF national)
+        Module **authentication / authorization**
+        de bbcms (pas de gateway externe).
+
+        Le filtre extrait du JWT :
         • userId
-        • bibleClubId (= agencyId)
-        • roles[]
+        • bibleClubId / levelId
+        • roles[] et permissions[]
 
-        Injecte dans le
-        **ReactiveSecurityContext**
-
-        Sélectionne le schéma
-        PostgreSQL du tenant
-        (tenant routing)
+        Il injecte ces valeurs dans
+        le **ReactiveSecurityContext**
+        et applique les annotations
+        @Secured("bbcms:...") posées
+        sur les contrôleurs.
     end note
 }
 
-package "bbcms-core" #E8EAF6 {
+package "bbcms — application & adapter/out" #E8EAF6 {
     component [WebController] as ctrl
     component [Service Layer] as svc
     component [R2DBC Repository] as repo
-    database "Schema tenant_xxx\n(PostgreSQL)" as db
+    database "PostgreSQL\n(schéma bbcms)" as db
 }
 
 leader -down-> client : se connecte\n(login une seule fois)
 client -down-> filter : requête HTTP\n+ Header Authorization: Bearer <JWT>
 
-filter -down-> ctrl : SecurityContext {\n  tenantId = "t-001"\n  organizationId = "chf-cm"\n  userId = "u-007"\n  bibleClubId = "bbc-uy1"\n}
+filter -down-> ctrl : SecurityContext {\n  userId = "u-007"\n  bibleClubId = "bbc-uy1"\n  roles = [BBC_PRESIDENT, ...]\n}
 
 ctrl -down-> svc : recordMeetingAttendance(\n  meetingId, presents[]\n)
 
 note right of ctrl
     Le Leader BBC ne spécifie
-    **JAMAIS** sa CHF ni son
-    Bible Club. Cette information
-    est **implicite** dans le contexte
-    de sécurité.
+    **JAMAIS** son Bible Club.
+    Cette information est **implicite**
+    dans le contexte de sécurité.
 
     Un Mentor peut **optionnellement**
     cibler un autre **bibleClubId**
-    parmi ceux qui lui sont rattachés.
+    parmi ceux qui lui sont rattachés
+    (vérifié par AuthorizationService).
 end note
 
 svc -down-> repo : findActiveMembers(\n  bbcId = context.bibleClubId\n)
 
-repo -down-> db : SELECT * FROM bbcms_member\nWHERE organization_id = 'chf-cm'\n  AND bible_club_id = 'bbc-uy1'
+repo -down-> db : SELECT * FROM bbcms_member\nWHERE bible_club_id = 'bbc-uy1'
 
 note bottom of db
-    Le schéma PostgreSQL est
-    automatiquement sélectionné
-    par le **tenant routing**
-    de kernel-core (schéma par tenant).
+    bbcms est une application autonome :
+    une seule base PostgreSQL pour
+    l'ensemble des Bible Clubs de la CHF.
 
-    La colonne organization_id (= CHF)
-    et bible_club_id (= agencyId)
-    sont héritées de BaseEntity (common-core).
+    La séparation se fait par
+    **bible_club_id** (colonne héritée
+    de BaseEntity, dans bbcms / shared)
+    et est vérifiée par le module
+    **authorization** avant chaque écriture.
 
-    Cas particulier hors-ligne :
-    une **base SQLite locale** réplique
-    le sous-ensemble des données dont
-    l'utilisateur connecté est propriétaire.
+    En mode hors-ligne, une **base SQLite
+    locale** réplique le sous-ensemble
+    propre à l'utilisateur connecté.
 end note
 
 @enduml

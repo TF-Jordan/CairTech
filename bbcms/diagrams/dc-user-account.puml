@@ -3,7 +3,7 @@
 skinparam classAttributeIconSize 0
 skinparam linetype ortho
 
-package "common-core" #EEEEEE {
+package "bbcms / shared" #EEEEEE {
     abstract class BaseEntity {
         # id : UUID
         # tenantId : UUID
@@ -16,18 +16,22 @@ package "common-core" #EEEEEE {
         # version : Long
     }
 
-    class PartyRef {
-        - partyId : UUID
-        - partyType : String
-        - displayName : String
-        + resolve() : Mono<PartySnapshot>
+    class PasswordResetToken <<Value Object>> {
+        - token : String
+        - expiresAt : Instant
+        - used : boolean
+    }
+
+    class ActivationToken <<Value Object>> {
+        - token : String
+        - expiresAt : Instant
+        - used : boolean
     }
 }
 
-package "bbcms-core / domain — Comptes & Inscriptions" #F5F5FF {
+package "bbcms / domain — Comptes & Inscriptions" #F5F5FF {
 
     class UserAccount extends BaseEntity {
-        - actorRef : PartyRef
         - email : String
         - passwordHash : String
         - phone : String
@@ -39,6 +43,28 @@ package "bbcms-core / domain — Comptes & Inscriptions" #F5F5FF {
         + deactivate() : void
         + updateProfile(...) : void
         + changePassword(old, new) : void
+        + verifyPassword(plain) : boolean
+    }
+
+    class Role extends BaseEntity {
+        - name : String
+        - description : String
+        - permissions : Set<Permission>
+        + grant(p : Permission) : void
+        + revoke(p : Permission) : void
+    }
+
+    class Permission <<Value Object>> {
+        - code : String
+        - description : String
+    }
+
+    class UserAccountRoleAssignment extends BaseEntity {
+        - userAccountId : UUID
+        - roleId : UUID
+        - scopeBibleClubId : UUID
+        - active : boolean
+        + revoke() : void
     }
 
     class MembershipRequest extends BaseEntity {
@@ -95,9 +121,13 @@ package "bbcms-core / domain — Comptes & Inscriptions" #F5F5FF {
 
     UserAccount *-- "1" UserProfile
     UserAccount o-- "0..*" MembershipRequest
+    UserAccount o-- "0..*" UserAccountRoleAssignment
+    UserAccount o-- "0..*" PasswordResetToken
+    UserAccount o-- "0..1" ActivationToken
+    Role *-- "0..*" Permission
+    UserAccountRoleAssignment --> Role
     UserAccount --> AccountStatus
     UserAccount --> UserType
-    UserAccount --> PartyRef
     MembershipRequest --> MembershipRequestStatus
     UserProfile --> Gender
 }

@@ -1,0 +1,95 @@
+@startuml ds-bbcms-11-login
+!theme plain
+skinparam sequenceArrowThickness 1.5
+
+title DS-BBCMS-11 — Connexion (login JWT) et vérification RBAC interne
+
+actor "Utilisateur" as user
+participant "AuthController\n<<adapter/in>>" as ctrl
+participant "AuthenticationService\n<<application/service>>" as svcAuth
+participant "RoleService\n<<application/service>>" as svcRole
+participant "UserAccountRepository\n<<port/out>>" as repoUser
+participant "RoleRepository\n<<port/out>>" as repoRole
+participant "JwtIssuer\n<<bbcms / security>>" as jwt
+database "PostgreSQL" as db
+
+== Phase 1 : Login ==
+
+user -> ctrl : POST /api/v1/bbcms/auth/login\n{ email, password }
+activate ctrl
+
+ctrl -> svcAuth : login(email, password)
+activate svcAuth
+
+svcAuth -> repoUser : findByEmail(email)
+repoUser -> db : SELECT * FROM bbcms_user_account
+db --> repoUser : UserAccount{id, passwordHash, status}
+repoUser --> svcAuth : UserAccount
+
+alt status != ACTIVE
+    svcAuth --> ctrl : ApiErrorResponse 401\n("compte non activé")
+    ctrl --> user : HTTP 401
+end
+
+svcAuth -> svcAuth : passwordHash.matches(password)\n(BCrypt)
+
+alt mot de passe invalide
+    svcAuth --> ctrl : ApiErrorResponse 401
+    ctrl --> user : HTTP 401
+end
+
+svcAuth -> svcRole : loadAssignmentsAndPermissions(userAccountId)
+activate svcRole
+svcRole -> repoRole : findActiveAssignmentsByUser(userAccountId)
+repoRole -> db : SELECT * FROM bbcms_user_role_assignment\nJOIN bbcms_role JOIN bbcms_role_permission
+db --> repoRole : List<Role + permissions[]>
+repoRole --> svcRole : assignments
+svcRole --> svcAuth : Set<Permission> + Set<Role>
+deactivate svcRole
+
+svcAuth -> jwt : issue({\n  userId, email,\n  bibleClubId, levelId,\n  roles[], permissions[]\n}, ttl=15min)
+activate jwt
+jwt --> svcAuth : accessToken (JWT signé HS256)
+deactivate jwt
+
+svcAuth -> jwt : issueRefreshToken(userId, ttl=30j)
+jwt --> svcAuth : refreshToken
+
+svcAuth -> repoUser : updateLastLoginAt(userAccountId, now)
+repoUser -> db : UPDATE bbcms_user_account
+
+svcAuth --> ctrl : LoginResponse {\n  accessToken,\n  refreshToken,\n  expiresIn\n}
+deactivate svcAuth
+
+ctrl --> user : HTTP 200 + JWT
+deactivate ctrl
+
+== Phase 2 : Appel d'une ressource protégée ==
+
+user -> ctrl : GET /api/v1/bbcms/meetings/{id}\nAuthorization: Bearer <JWT>
+activate ctrl
+
+note right of ctrl
+  Le **SecurityFilter** interne
+  intercepte la requête, valide la
+  signature du JWT et injecte le
+  SecurityContext (userId, bibleClubId,
+  roles, permissions).
+
+  L'aspect @Secured("bbcms:meeting:read")
+  vérifie ensuite que la permission
+  est présente avant d'invoquer le service.
+end note
+
+ctrl -> ctrl : SecurityFilter.validate(JWT)
+ctrl -> ctrl : @Secured.check("bbcms:meeting:read")
+
+alt permission manquante
+    ctrl --> user : HTTP 403 — ApiErrorResponse
+end
+
+ctrl -> ctrl : MeetingService.findById(id)
+ctrl --> user : HTTP 200 — MeetingResponse
+deactivate ctrl
+
+@enduml

@@ -27,7 +27,7 @@ REMOVED --> [*]
 note right of REMOVED
   L'historique des présences,
   scores et contributions reste
-  archivé (audit trail kernel-core),
+  archivé (audit trail bbcms / shared),
   mais le membre n'est plus
   pris en compte dans les
   calculs courants.
@@ -37,7 +37,7 @@ note right of ACTIVE
   Sous-état FAITHFUL / UNFAITHFUL
   recalculé par DS-BBCMS-06.
   Le seuil par défaut est 50 %
-  (paramétrable via settings-core).
+  (paramétrable via module Settings).
 end note
 
 @enduml

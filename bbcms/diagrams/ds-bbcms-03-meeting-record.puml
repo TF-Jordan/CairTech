@@ -14,7 +14,7 @@ participant "AttendanceRepository" as repoAtt
 participant "MemberRepository" as repoMem
 participant "FilePort\n<<port/out>>" as filePort
 database "PostgreSQL" as db
-participant "OutboxEvent" as outbox
+participant "DomainEventBus" as outbox
 
 leader -> ctrl : POST /api/v1/bbcms/meetings/{id}/record\n{\n  startTime, endTime,\n  presents: [{memberId|visitorId, role}],\n  visitors: [...],\n  nbBelievers, summary,\n  pictures: [files]\n}
 activate ctrl
@@ -64,7 +64,7 @@ activate engine
 note right of engine
   P% = score / totalEligible × 100
   faithful = P% >= seuil (ex 50%)
-  Le seuil est lu via settings-core.
+  Le seuil est lu via module Settings.
 end note
 engine --> svcAtt : updated AttendanceScores
 deactivate engine
@@ -72,8 +72,8 @@ deactivate engine
 svcAtt -> repoAtt : saveAll(updated)
 deactivate svcAtt
 
-svc -> outbox : insertOutboxEvent(MEETING_RECORDED,\n  {meetingId, type, nbPresent,\n   nbBelievers})
-outbox -> db : INSERT kernel.outbox_event
+svc -> outbox : publishDomainEvent(MEETING_RECORDED,\n  {meetingId, type, nbPresent,\n   nbBelievers})
+outbox -> db : INSERT bbcms_domain_event
 
 svc --> ctrl : Meeting{status=RECORDED, nbPresent, ...}
 deactivate svc

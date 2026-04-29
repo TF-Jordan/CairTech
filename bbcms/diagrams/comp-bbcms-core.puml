@@ -2,12 +2,14 @@
 !theme plain
 skinparam componentStyle rectangle
 
-title Diagramme de composants — bbcms-core (architecture interne)
+title Diagramme de composants — bbcms (application autonome)
 
-package "bbcms-core" #E8EAF6 {
+package "bbcms" #E8EAF6 {
 
     package "adapter/in/web" #C5CAE9 {
+        component [AuthController\n(login, refresh, reset)] as ctrlAuth
         component [UserAccountController] as ctrlUser
+        component [RoleController] as ctrlRole
         component [BibleClubController] as ctrlBbc
         component [LevelController] as ctrlLvl
         component [MembershipController] as ctrlMem
@@ -22,6 +24,11 @@ package "bbcms-core" #E8EAF6 {
         component [DTO / Mapper] as dto
     }
 
+    package "security (interne)" #C5CAE9 {
+        component [SecurityFilter\n(JWT validation)] as secFilter
+        component [@Secured Aspect\n(RBAC)] as secAspect
+    }
+
     package "adapter/in/mobile" #C5CAE9 {
         component [MobileSyncController\n(REST + WebSocket)] as ctrlSync
     }
@@ -33,7 +40,9 @@ package "bbcms-core" #E8EAF6 {
     }
 
     package "application/service" #A5D6A7 {
+        component [AuthenticationService\n(login, JWT issuer,\npassword hashing)] as svcAuth
         component [UserAccountService] as svcUser
+        component [RoleService\n(RBAC interne)] as svcRole
         component [BibleClubService] as svcBbc
         component [MembershipService] as svcMem
         component [MeetingService] as svcMeet
@@ -49,7 +58,9 @@ package "bbcms-core" #E8EAF6 {
     }
 
     package "application/port/in" #81C784 {
+        interface "AuthenticationUseCase" as ucAuth
         interface "ManageUserAccountUseCase" as ucUser
+        interface "ManageRoleUseCase" as ucRole
         interface "ManageBibleClubUseCase" as ucBbc
         interface "ManageMembershipUseCase" as ucMem
         interface "ManageMeetingUseCase" as ucMeet
@@ -66,6 +77,7 @@ package "bbcms-core" #E8EAF6 {
 
     package "application/port/out" #EF9A9A {
         interface "UserAccountRepository" as repoUser
+        interface "RoleRepository" as repoRole
         interface "BibleClubRepository" as repoBbc
         interface "LevelRepository" as repoLvl
         interface "MemberRepository" as repoMem
@@ -77,15 +89,14 @@ package "bbcms-core" #E8EAF6 {
         interface "PrayerChainRepository" as repoPray
         interface "FinancialContribRepository" as repoFin
         interface "DailyVersePublicationRepository" as repoPub
-        interface "ActorPort" as actorPort
         interface "NotificationPort" as notifPort
         interface "SettingsPort" as settingsPort
-        interface "FilePort" as filePort
+        interface "FileStoragePort" as filePort
         interface "LocalSyncPort" as localPort
     }
 
     package "domain/" #FFF9C4 {
-        component [UserAccount\nMembershipRequest] as domUser
+        component [UserAccount\nRole\nPermission\nMembershipRequest] as domUser
         component [BibleClub\nLevel\nLeadershipPosition] as domBbc
         component [Member\nStudent\nProfessional\nMentor\nNationalLeader\nVisitor] as domPeople
         component [Meeting\nMeetingPresence\nDepartmentalMeeting] as domMeet
@@ -103,24 +114,33 @@ package "bbcms-core" #E8EAF6 {
         component [SQLite/Room Implementations\n(Repository adapters offline)] as room
     }
 
-    package "adapter/out/integration" #FFCDD2 {
-        component [ActorAdapter] as adActor
-        component [NotificationAdapter] as adNotif
-        component [SettingsAdapter] as adSettings
-        component [FileAdapter] as adFile
+    package "adapter/out/storage" #FFCDD2 {
+        component [MinioFileStorageAdapter\n(implémente FileStoragePort)] as adFile
     }
 
-    package "adapter/out/messaging" #FFCDD2 {
-        component [BbcmsEventConsumer\n(Kafka listener)] as kafkaConsumer
+    package "adapter/out/notification" #FFCDD2 {
+        component [PushAdapter (FCM/APNS)] as adPush
+        component [EmailAdapter (SMTP)] as adEmail
+        component [SmsAdapter] as adSms
+    }
+
+    package "adapter/out/settings" #FFCDD2 {
+        component [InAppSettingsAdapter\n(table bbcms_setting + cache)] as adSettings
+    }
+
+    package "shared/" #ECEFF1 {
+        component [BaseEntity\nAuditTrail\nDomainEventBus\n(Spring ApplicationEvent)] as shared
     }
 
     package "config/" #ECEFF1 {
-        component [BbcmsCoreConfiguration\nBbcmsPermissionRegistrar\nBbcmsLiquibaseConfig] as config
+        component [BbcmsConfiguration\nSecurityConfiguration\nLiquibaseConfig\nMinioConfig\nNotificationConfig\nQuartzConfig] as config
     }
 }
 
 ' Wiring (web → use cases → services)
+ctrlAuth -down-> ucAuth
 ctrlUser -down-> ucUser
+ctrlRole -down-> ucRole
 ctrlBbc -down-> ucBbc
 ctrlMem -down-> ucMem
 ctrlMeet -down-> ucMeet
@@ -136,7 +156,9 @@ schedFaith -down-> ucFaith
 schedInact -down-> ucMem
 schedBackup -down-> ucReset
 
+ucAuth -down-> svcAuth
 ucUser -down-> svcUser
+ucRole -down-> svcRole
 ucBbc -down-> svcBbc
 ucMem -down-> svcMem
 ucMeet -down-> svcMeet
@@ -166,7 +188,10 @@ svcFin .down.> domFin
 svcPub .down.> domPub
 
 ' Service → repositories
+svcAuth -down-> repoUser
+svcAuth -down-> repoRole
 svcUser -down-> repoUser
+svcRole -down-> repoRole
 svcBbc -down-> repoBbc
 svcBbc -down-> repoLvl
 svcMem -down-> repoMem
@@ -180,11 +205,15 @@ svcFin -down-> repoFin
 svcPub -down-> repoPub
 
 ' Service → ports out
-svcUser -down-> actorPort
 svcMeet -down-> notifPort
 svcEvt -down-> notifPort
+svcPub -down-> notifPort
+svcUser -down-> notifPort
 svcMeet -down-> filePort
+svcEvt -down-> filePort
+svcPub -down-> filePort
 svcBbc -down-> settingsPort
+svcAtt -down-> settingsPort
 svcReset -down-> localPort
 
 ' repositories → adapters out
@@ -205,10 +234,17 @@ repoUser -down-> room
 repoMem -down-> room
 repoMeet -down-> room
 
-actorPort -down-> adActor
-notifPort -down-> adNotif
+notifPort -down-> adPush
+notifPort -down-> adEmail
+notifPort -down-> adSms
 settingsPort -down-> adSettings
 filePort -down-> adFile
+
+' SecurityFilter intercepte tous les contrôleurs
+secFilter ..> ctrlAuth : <<filtre>>
+secFilter ..> ctrlBbc : <<filtre>>
+secFilter ..> ctrlMeet : <<filtre>>
+secAspect ..> svcBbc : @Secured("bbcms:...")
 
 ctrlSync -down-> ucMem
 
