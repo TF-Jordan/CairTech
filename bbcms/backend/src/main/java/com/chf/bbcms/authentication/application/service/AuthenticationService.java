@@ -9,6 +9,7 @@ import com.chf.bbcms.authorization.application.service.AuthorizationService;
 import com.chf.bbcms.identity.application.port.out.UserAccountRepository;
 import com.chf.bbcms.identity.domain.UserAccount;
 import com.chf.bbcms.identity.domain.UserStatus;
+import com.chf.bbcms.people.application.port.out.MemberRepository;
 import com.chf.bbcms.shared.domain.BusinessRuleViolation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class AuthenticationService implements AuthenticationUseCase {
     private final PasswordHasher passwordHasher;
     private final JwtIssuer jwtIssuer;
     private final AuthorizationService authorizationService;
+    private final MemberRepository memberRepository;
     private final Duration refreshTtl;
     private final Duration accessTtl;
 
@@ -34,6 +36,7 @@ public class AuthenticationService implements AuthenticationUseCase {
                                  PasswordHasher passwordHasher,
                                  JwtIssuer jwtIssuer,
                                  AuthorizationService authorizationService,
+                                 MemberRepository memberRepository,
                                  @Value("${bbcms.security.jwt.refresh-token-ttl}") Duration refreshTtl,
                                  @Value("${bbcms.security.jwt.access-token-ttl}") Duration accessTtl) {
         this.userRepository = userRepository;
@@ -41,6 +44,7 @@ public class AuthenticationService implements AuthenticationUseCase {
         this.passwordHasher = passwordHasher;
         this.jwtIssuer = jwtIssuer;
         this.authorizationService = authorizationService;
+        this.memberRepository = memberRepository;
         this.refreshTtl = refreshTtl;
         this.accessTtl = accessTtl;
     }
@@ -88,15 +92,27 @@ public class AuthenticationService implements AuthenticationUseCase {
     }
 
     private Mono<TokenPair> issueTokenPair(UserAccount account) {
-        return authorizationService.permissionsOf(account.getId())
-                .flatMap(permissions -> {
+        Mono<Set<String>> permissionsMono = authorizationService.permissionsOf(account.getId());
+        // Récupère le bibleClubId du Member STUDENT (si l'utilisateur en a un).
+        // Pour PROFESSIONAL/MENTOR/NATIONAL_LEADER: pas de scope BBC unique → null.
+        Mono<java.util.UUID> bibleClubIdMono = memberRepository.findByUserAccountId(account.getId())
+                .map(m -> m.getBibleClubId().orElse(null))
+                .defaultIfEmpty(null);
+
+        return Mono.zip(permissionsMono, bibleClubIdMono.defaultIfEmpty(new java.util.UUID(0L, 0L)))
+                .flatMap(tuple -> {
+                    Set<String> permissions = tuple.getT1();
+                    java.util.UUID rawBbcId = tuple.getT2();
+                    java.util.UUID bibleClubId = (rawBbcId.getMostSignificantBits() == 0L
+                            && rawBbcId.getLeastSignificantBits() == 0L) ? null : rawBbcId;
+
                     JwtIssuer.JwtClaims claims = new JwtIssuer.JwtClaims(
                             account.getId(),
                             account.getEmail(),
                             account.getUserType().name(),
                             Set.of(),
                             permissions,
-                            null, // bibleClubId à enrichir en phase 2 (depuis Member.bibleClubId)
+                            bibleClubId,
                             Instant.now(),
                             Instant.now().plus(accessTtl)
                     );

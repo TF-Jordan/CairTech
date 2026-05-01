@@ -83,17 +83,20 @@ L'application démarre sur `http://localhost:8080`. OpenAPI: `http://localhost:8
 
 Master: `src/main/resources/db/changelog/db.changelog-master.xml`
 
-Phase 1 livrée:
+Livré (Phase 1 + 2):
 - `00-extensions` — pgcrypto
 - `01-rbac-audit-settings` — Role, Permission, UserRoleAssignment, Setting
 - `02-identity` — UserAccount, MembershipRequest, ActivationToken, PasswordResetToken, RefreshToken
+- `03-organization` — BibleClub, Level (UNIQUE bbc+type), LeadershipAssignment
+- `04-people` — Member (single-table polymorphisme, sans PII), MemberDepartment,
+  MentorAssignment, Visitor (FK polymorphe corrigée: meeting_id XOR event_id)
 - `14-domain-event-outbox` — table outbox transactionnelle
 - `15-shedlock` — verrou distribué scheduler
 - `16-seed-permissions` — catalogue (~70 permissions)
 - `17-seed-roles` — 13 rôles standards + mappings
 - `18-seed-settings` — seuils par défaut
 
-## Endpoints livrés (Phase 1)
+## Endpoints livrés
 
 | Méthode | Path | Permission |
 |---|---|---|
@@ -103,11 +106,23 @@ Phase 1 livrée:
 | POST | `/api/v1/bbcms/users` | (publique — VISITOR) |
 | POST | `/api/v1/bbcms/users/activate?token=...` | (publique) |
 | GET | `/api/v1/bbcms/users/{id}` | authentifié |
+| GET | `/api/v1/bbcms/membership-requests?status=PENDING` | `bbcms:membership-request:read` |
+| POST | `/api/v1/bbcms/membership-requests/{id}/approve` | `bbcms:membership-request:approve` |
+| POST | `/api/v1/bbcms/membership-requests/{id}/reject` | `bbcms:membership-request:reject` |
+| POST/GET/PUT/DELETE | `/api/v1/bbcms/bible-clubs[/{id}/...]` | `bbcms:bible-club:*` |
+| POST/GET/PUT/DELETE | `/api/v1/bbcms/bible-clubs/{bbcId}/levels[/{id}/...]` | `bbcms:level:*` |
+| GET/PUT/POST/DELETE | `/api/v1/bbcms/members[/{id}/...]` | `bbcms:member:*` |
+
+À l'approbation d'une `MembershipRequest`, le `MembershipService` orchestre dans
+une seule transaction R2DBC: promotion du `UserAccount.userType` + création du
+`Member` correspondant (STUDENT/PROFESSIONAL/MENTOR/NATIONAL_LEADER).
+
+Le JWT inclut désormais `bibleClubId` (extrait de `Member` du STUDENT) pour le
+scope RBAC (RM-09).
 
 ## Prochaines phases
 
-- **Phase 2** (organization, people): BibleClub, Level, Member polymorphe, Visitor
-- **Phase 3** (activités): Meeting, Event, Attendance + FaithfulnessEngine, schedulers
+- **Phase 3** (activités): Meeting + state machine, Event, Attendance + FaithfulnessEngine, schedulers
 - **Phase 4**: Evangelism, Discipleship, Intercession, Finance, Publications, Notifications push/SMS
 - **Phase 5**: Reset BBC, Dashboards, hardening
 - **Phase 6** (V2): Sync offline mobile/desktop
