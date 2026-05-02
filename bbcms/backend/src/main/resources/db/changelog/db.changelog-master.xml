@@ -18,6 +18,7 @@
     <include file="db/changelog/10-intercession.xml"/>
     <include file="db/changelog/11-finance.xml"/>
     <include file="db/changelog/12-publication.xml"/>
+    <include file="db/changelog/13-reset.xml"/>
     <include file="db/changelog/14-domain-event-outbox.xml"/>
     <include file="db/changelog/15-shedlock.xml"/>
     <include file="db/seeds/16-seed-permissions.xml"/>

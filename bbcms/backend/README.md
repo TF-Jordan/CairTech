@@ -120,9 +120,32 @@ une seule transaction R2DBC: promotion du `UserAccount.userType` + création du
 Le JWT inclut désormais `bibleClubId` (extrait de `Member` du STUDENT) pour le
 scope RBAC (RM-09).
 
+## Reset annuel (Phase 5)
+
+`POST /api/v1/bbcms/bible-clubs/{id}/reset` — workflow saga transactionnel:
+1. BBC verrouillé en `UNDER_RESET` (RM-07: gel des écritures)
+2. Snapshot annuel calculé (membres actifs, fidèles, % objectif)
+3. Archive textuelle uploadée dans MinIO (PDF en V2)
+4. Transferts L1→L2..L6→L7, L7→TRANSFERRED
+5. `AttendanceScore` reset à 0 pour la nouvelle année académique
+6. BBC repasse `ACTIVE`
+7. Événement `BBC_RESET` publié sur l'outbox
+
+## Dashboards
+
+- `GET /api/v1/bbcms/dashboards/bible-clubs/{id}?academicYear=` — pilotage BBC
+- `GET /api/v1/bbcms/dashboards/national?academicYear=` — vue nationale CHF
+
+Permissions: `bbcms:dashboard:bbc` et `bbcms:dashboard:national`.
+
+## Hardening
+
+- **Rate limiting**: 10 req/min/IP sur `/auth/*` et `/users` (in-memory Caffeine)
+  → HTTP 429 avec corps `BBCMS_RATE_LIMITED`
+- **OpenAPI**: documentation auto-générée à `/swagger-ui.html`, schéma JWT Bearer
+- **ArchUnit**: 7 garde-fous (domain pur, layered, conventions controllers/services)
+
 ## Prochaines phases
 
-- **Phase 3** (activités): Meeting + state machine, Event, Attendance + FaithfulnessEngine, schedulers
-- **Phase 4**: Evangelism, Discipleship, Intercession, Finance, Publications, Notifications push/SMS
-- **Phase 5**: Reset BBC, Dashboards, hardening
-- **Phase 6** (V2): Sync offline mobile/desktop
+- **Phase 6** (V2): Sync offline mobile/desktop, observabilité (logs JSON, traces OTel),
+  PDF natif (Apache PDFBox/iText), notifications Push (FCM) et SMS (Twilio/Orange) actives
