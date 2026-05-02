@@ -116,7 +116,7 @@
         <sql>
             ALTER TABLE bbcms_meeting_presence
             ADD CONSTRAINT ck_mp_member_or_visitor
-            CHECK ((member_id IS NOT NULL) <> (visitor_id IS NOT NULL));
+            CHECK ((member_id IS NOT NULL) != (visitor_id IS NOT NULL));
         </sql>
         <createIndex tableName="bbcms_meeting_presence" indexName="ix_mp_meeting"><column name="meeting_id"/></createIndex>
         <createIndex tableName="bbcms_meeting_presence" indexName="ix_mp_member"><column name="member_id"/></createIndex>

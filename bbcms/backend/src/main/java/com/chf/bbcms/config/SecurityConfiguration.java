@@ -28,7 +28,7 @@ public class SecurityConfiguration {
                                 "/api/v1/bbcms/auth/login",
                                 "/api/v1/bbcms/auth/refresh",
                                 "/api/v1/bbcms/auth/reset-password",
-                                "/api/v1/bbcms/auth/activate",
+                                "/api/v1/bbcms/users/activate",
                                 "/api/v1/bbcms/users",
                                 "/actuator/health",
                                 "/actuator/info",

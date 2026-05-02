@@ -65,7 +65,7 @@
         <sql>
             ALTER TABLE bbcms_event_participation
             ADD CONSTRAINT ck_ep_member_or_visitor
-            CHECK ((member_id IS NOT NULL) <> (visitor_id IS NOT NULL));
+            CHECK ((member_id IS NOT NULL) != (visitor_id IS NOT NULL));
         </sql>
         <addUniqueConstraint tableName="bbcms_event_participation"
                              columnNames="event_id, member_id"

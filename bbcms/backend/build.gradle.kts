@@ -38,7 +38,7 @@ dependencies {
     // PostgreSQL R2DBC + JDBC (JDBC pour Liquibase + ShedLock)
     implementation("org.postgresql:r2dbc-postgresql")
     runtimeOnly("org.postgresql:postgresql")
-    implementation("org.springframework:spring-jdbc")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
 
     // Liquibase
     implementation("org.liquibase:liquibase-core")
