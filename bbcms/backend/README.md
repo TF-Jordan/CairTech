@@ -145,7 +145,43 @@ Permissions: `bbcms:dashboard:bbc` et `bbcms:dashboard:national`.
 - **OpenAPI**: documentation auto-générée à `/swagger-ui.html`, schéma JWT Bearer
 - **ArchUnit**: 7 garde-fous (domain pur, layered, conventions controllers/services)
 
-## Prochaines phases
+## Sync offline (Phase 6)
 
-- **Phase 6** (V2): Sync offline mobile/desktop, observabilité (logs JSON, traces OTel),
-  PDF natif (Apache PDFBox/iText), notifications Push (FCM) et SMS (Twilio/Orange) actives
+Endpoint pull-only pour clients offline (push-back en V3, le client rejoue ses POST/PUT
+quand il revient online):
+
+```
+GET /api/v1/bbcms/sync/changes
+  Header: X-Device-Id: <id-stable-device>
+  Query:  kind=MEETING|MEMBER|BIBLE_CLUB|... (cf SyncEntityKind)
+          since=<ISO instant, optionnel>
+          limit=100 (max 500)
+```
+
+Le serveur:
+1. lit le curseur `(user, device, kind)` depuis `bbcms_sync_cursor`,
+2. interroge la table cible où `updated_at > since` (ou `last_computed_at` pour scores),
+3. avance le curseur jusqu'au plus récent `updated_at` du batch,
+4. renvoie un `SyncBatch` avec changements + `cursorAdvancedTo`.
+
+Réponse type:
+```json
+{
+  "kind": "MEETING",
+  "since": "2025-10-01T00:00:00Z",
+  "cursorAdvancedTo": "2025-10-15T08:42:11.123Z",
+  "count": 42,
+  "changes": [{ "id": "...", "updatedAt": "...", "version": 3, "payload": { ... } }]
+}
+```
+
+## PDF natif (Phase 6)
+
+Les snapshots de reset annuel sont désormais générés en PDF natif via OpenPDF
+(LGPL fork iText 2.x). Implémenté par `SnapshotPdfGenerator` derrière le port
+`SnapshotRendererPort`. L'archive est uploadée dans MinIO (`application/pdf`).
+
+## Notes
+
+- Devices push: table `bbcms_device_token` créée (V2/V3 — l'adapter FCM stub reste OFF par défaut)
+- Sync write-back: V3 (le client rejoue ses commandes online en attendant)

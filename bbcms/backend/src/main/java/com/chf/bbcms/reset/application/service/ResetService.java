@@ -12,6 +12,8 @@ import com.chf.bbcms.people.domain.MemberKind;
 import com.chf.bbcms.people.domain.MemberStatus;
 import com.chf.bbcms.reset.application.port.in.ResetBibleClubUseCase;
 import com.chf.bbcms.reset.application.port.out.ResetSnapshotRepository;
+import com.chf.bbcms.reset.application.port.out.SnapshotRendererPort;
+import com.chf.bbcms.reset.application.port.out.SnapshotRendererPort.RenderedDocument;
 import com.chf.bbcms.reset.domain.BibleClubReset;
 import com.chf.bbcms.reset.domain.BibleClubResetSnapshot;
 import com.chf.bbcms.reset.domain.TransferRule;
@@ -26,7 +28,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.ByteArrayInputStream;
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +57,7 @@ public class ResetService implements ResetBibleClubUseCase {
     private final AttendanceScoreRepository scoreRepository;
     private final ResetSnapshotRepository snapshotRepository;
     private final FileStoragePort fileStorage;
+    private final SnapshotRendererPort snapshotRenderer;
     private final DomainEventBus eventBus;
     private final TransactionalOperator txOperator;
 
@@ -65,6 +67,7 @@ public class ResetService implements ResetBibleClubUseCase {
                         AttendanceScoreRepository scoreRepository,
                         ResetSnapshotRepository snapshotRepository,
                         FileStoragePort fileStorage,
+                        SnapshotRendererPort snapshotRenderer,
                         DomainEventBus eventBus,
                         TransactionalOperator txOperator) {
         this.bibleClubRepository = bibleClubRepository;
@@ -73,6 +76,7 @@ public class ResetService implements ResetBibleClubUseCase {
         this.scoreRepository = scoreRepository;
         this.snapshotRepository = snapshotRepository;
         this.fileStorage = fileStorage;
+        this.snapshotRenderer = snapshotRenderer;
         this.eventBus = eventBus;
         this.txOperator = txOperator;
     }
@@ -133,23 +137,10 @@ public class ResetService implements ResetBibleClubUseCase {
     }
 
     private Mono<BibleClubResetSnapshot> archiveSnapshot(BibleClub bbc, BibleClubResetSnapshot snap) {
-        String body = """
-                BBCMS — Snapshot annuel
-                BBC: %s (id=%s)
-                Année académique: %d
-                Membres actifs: %d
-                Membres fidèles: %d
-                %% atteint: %s
-                Archivé le: %s
-                """.formatted(
-                bbc.getName(), bbc.getId(), snap.academicYear(),
-                snap.nbMembersBefore(), snap.nbFaithfulBefore(),
-                snap.percentageReached() == null ? "N/A" : snap.percentageReached().toPlainString(),
-                snap.archivedAt());
-        byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
+        RenderedDocument doc = snapshotRenderer.render(bbc, snap);
         FileStoragePort.StoreRequest req = new FileStoragePort.StoreRequest(
-                "bbc-%s-%d-snapshot.txt".formatted(bbc.getId(), snap.academicYear()),
-                "text/plain", bytes.length, new ByteArrayInputStream(bytes));
+                doc.fileName(), doc.contentType(), doc.bytes().length,
+                new ByteArrayInputStream(doc.bytes()));
         return fileStorage.store(req).map(snap::withArchiveFileId);
     }
 
