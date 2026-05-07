@@ -10,3 +10,8 @@ build/
 .settings/
 HELP.md
 *.log
+
+# Local environment — credentials, DO NOT COMMIT
+.env
+.env.local
+.env.*.local

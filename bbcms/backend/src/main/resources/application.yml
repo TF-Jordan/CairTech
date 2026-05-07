@@ -70,6 +70,13 @@ bbcms:
   outbox:
     publish-interval: PT5S
     batch-size: 100
+  bootstrap:
+    super-admin:
+      enabled: ${BBCMS_SUPER_ADMIN_ENABLED:true}
+      email: ${BBCMS_SUPER_ADMIN_EMAIL:}
+      password: ${BBCMS_SUPER_ADMIN_PASSWORD:}
+      first-names: ${BBCMS_SUPER_ADMIN_FIRST_NAMES:Super}
+      next-names: ${BBCMS_SUPER_ADMIN_NEXT_NAMES:Admin}
 
 logging:
   level:

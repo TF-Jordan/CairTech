@@ -26,6 +26,7 @@ extra["caffeineVersion"] = "3.1.8"
 extra["mapstructVersion"] = "1.6.2"
 extra["archunitVersion"] = "1.3.0"
 extra["openpdfVersion"] = "2.0.3"
+extra["dotenvVersion"] = "4.0.0"
 
 dependencies {
     // Spring Boot WebFlux + Security + R2DBC
@@ -64,6 +65,9 @@ dependencies {
 
     // OpenPDF (LGPL fork of iText 2.x) — génération PDF des snapshots reset
     implementation("com.github.librepdf:openpdf:${property("openpdfVersion")}")
+
+    // .env loader (intégration Spring Boot via PropertySource)
+    implementation("me.paulschwarz:spring-dotenv:${property("dotenvVersion")}")
 
     // MapStruct
     implementation("org.mapstruct:mapstruct:${property("mapstructVersion")}")

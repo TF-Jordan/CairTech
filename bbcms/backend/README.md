@@ -57,12 +57,46 @@ Chaque module suit la structure hexagonale:
 docker-compose up -d
 ```
 
+### Configurer le super-admin (auto-créé au démarrage)
+
+Au premier démarrage, un compte super-admin avec le rôle `SYSTEM_ADMIN` (toutes les
+permissions) est créé automatiquement à partir des credentials chargés depuis le
+fichier `.env` à la racine de `bbcms/backend/`.
+
+```bash
+cp .env.example .env
+# Éditer .env: BBCMS_SUPER_ADMIN_EMAIL et BBCMS_SUPER_ADMIN_PASSWORD
+```
+
+Le bootstrap est **idempotent**: re-démarrer ne crée pas de doublon, et ne
+réécrase pas le mot de passe d'un compte existant. Pour désactiver:
+`BBCMS_SUPER_ADMIN_ENABLED=false`.
+
+> Le fichier `.env` est gitignoré. `.env.example` est versionné comme template.
+
 ### Lancement application
 ```bash
 ./gradlew bootRun
 ```
 
 L'application démarre sur `http://localhost:8080`. OpenAPI: `http://localhost:8080/swagger-ui.html`.
+
+Au démarrage, tu verras dans les logs:
+```
+✅ Super-admin created: admin@chf.org (id=...)
+```
+ou, si déjà créé:
+```
+Super-admin 'admin@chf.org' already exists (status=ACTIVE); skipping creation
+```
+
+### Tester rapidement
+
+```bash
+curl -X POST http://localhost:8080/api/v1/bbcms/auth/login \
+  -H "Content-Type: application/json" \
+  -d "{\"email\":\"$BBCMS_SUPER_ADMIN_EMAIL\",\"password\":\"$BBCMS_SUPER_ADMIN_PASSWORD\"}"
+```
 
 ### Tests
 ```bash
