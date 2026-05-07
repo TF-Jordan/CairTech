@@ -19,6 +19,9 @@ import '../features/membership/presentation/membership_requests_screen.dart';
 import '../features/meetings/presentation/meeting_live_screen.dart';
 import '../features/meetings/presentation/meeting_plan_screen.dart';
 import '../features/meetings/presentation/meetings_screen.dart';
+import '../features/events/presentation/event_detail_screen.dart';
+import '../features/events/presentation/event_plan_screen.dart';
+import '../features/events/presentation/events_list_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 
@@ -88,6 +91,21 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/membership-requests',
         builder: (_, __) => const MembershipRequestsScreen(),
+      ),
+      GoRoute(
+        path: '/events',
+        builder: (_, __) => const EventsListScreen(),
+        routes: [
+          GoRoute(
+            path: 'new',
+            builder: (_, __) => const EventPlanScreen(),
+          ),
+          GoRoute(
+            path: ':id',
+            builder: (_, state) =>
+                EventDetailScreen(id: state.pathParameters['id']!),
+          ),
+        ],
       ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
