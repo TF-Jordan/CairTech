@@ -13,6 +13,9 @@ import '../features/home/presentation/info_page.dart';
 import '../features/bible_club/presentation/bible_club_create_screen.dart';
 import '../features/bible_club/presentation/bible_club_detail_screen.dart';
 import '../features/bible_club/presentation/bible_club_list_screen.dart';
+import '../features/members/presentation/member_detail_screen.dart';
+import '../features/members/presentation/members_list_screen.dart';
+import '../features/membership/presentation/membership_requests_screen.dart';
 import '../features/meetings/presentation/meetings_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
@@ -69,6 +72,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.standby,
         builder: (_, __) => const StandbyScreen(),
+      ),
+      GoRoute(
+        path: '/members/:id',
+        builder: (_, state) =>
+            MemberDetailScreen(id: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/clubs/:id/members',
+        builder: (_, state) =>
+            MembersListScreen(bibleClubId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/membership-requests',
+        builder: (_, __) => const MembershipRequestsScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
