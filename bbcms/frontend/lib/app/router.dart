@@ -16,6 +16,8 @@ import '../features/bible_club/presentation/bible_club_list_screen.dart';
 import '../features/members/presentation/member_detail_screen.dart';
 import '../features/members/presentation/members_list_screen.dart';
 import '../features/membership/presentation/membership_requests_screen.dart';
+import '../features/meetings/presentation/meeting_live_screen.dart';
+import '../features/meetings/presentation/meeting_plan_screen.dart';
 import '../features/meetings/presentation/meetings_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
@@ -110,6 +112,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.meetings,
             builder: (_, __) => const MeetingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                builder: (_, __) => const MeetingPlanScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                builder: (_, state) =>
+                    MeetingLiveScreen(id: state.pathParameters['id']!),
+              ),
+            ],
           ),
           GoRoute(
             path: AppRoutes.publications,
