@@ -10,6 +10,8 @@ import '../features/onboarding/presentation/splash_screen.dart';
 import '../features/onboarding/presentation/standby_screen.dart';
 import '../features/home/presentation/home_shell.dart';
 import '../features/home/presentation/info_page.dart';
+import '../features/bible_club/presentation/bible_club_create_screen.dart';
+import '../features/bible_club/presentation/bible_club_detail_screen.dart';
 import '../features/bible_club/presentation/bible_club_list_screen.dart';
 import '../features/meetings/presentation/meetings_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
@@ -75,6 +77,18 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.clubs,
             builder: (_, __) => const BibleClubListScreen(),
+            routes: [
+              GoRoute(
+                path: 'new',
+                parentNavigatorKey: null,
+                builder: (_, __) => const BibleClubCreateScreen(),
+              ),
+              GoRoute(
+                path: ':id',
+                builder: (_, state) =>
+                    BibleClubDetailScreen(id: state.pathParameters['id']!),
+              ),
+            ],
           ),
           GoRoute(
             path: AppRoutes.meetings,
