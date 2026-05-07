@@ -1,0 +1,77 @@
+name: bbcms_frontend
+description: BBCMS — Bible Club Management Software (Flutter client)
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+  flutter: ">=3.24.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # State / DI
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Routing
+  go_router: ^14.2.7
+
+  # Network
+  dio: ^5.7.0
+  retrofit: ^4.4.1
+  pretty_dio_logger: ^1.4.0
+
+  # Models
+  freezed_annotation: ^2.4.4
+  json_annotation: ^4.9.0
+
+  # Local persistence
+  drift: ^2.20.2
+  sqlite3_flutter_libs: ^0.5.24
+  path_provider: ^2.1.4
+  path: ^1.9.0
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2
+
+  # Auth
+  jwt_decoder: ^2.0.1
+
+  # UI
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.4.1
+  image_picker: ^1.1.2
+  fl_chart: ^0.69.0
+  lottie: ^3.1.2
+  flutter_animate: ^4.5.0
+  reactive_forms: ^17.0.1
+  intl: ^0.19.0
+
+  # Utils
+  uuid: ^4.5.0
+  collection: ^1.18.0
+  logger: ^2.4.0
+  connectivity_plus: ^6.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.13
+  riverpod_generator: ^2.4.3
+  freezed: ^2.5.7
+  json_serializable: ^6.8.0
+  retrofit_generator: ^9.1.5
+  drift_dev: ^2.20.3
+  custom_lint: ^0.6.7
+  riverpod_lint: ^2.3.13
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/

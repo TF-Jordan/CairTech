@@ -1,0 +1,34 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+.fvm/
+.idea/
+.vscode/
+
+# Generated
+*.g.dart
+*.freezed.dart
+*.gr.dart
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.local
+
+# Coverage
+coverage/
+
+# iOS / Android / web build artifacts
+ios/Pods/
+ios/.symlinks/
+android/.gradle/
+android/local.properties
+web/build/
