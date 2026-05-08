@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/router.dart';
 import '../../../core/error/failures.dart';
+import '../../../core/rbac/auth_session.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/primary_button.dart';
@@ -35,12 +36,34 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref
           .read(authControllerProvider.notifier)
           .login(_email.text.trim(), _password.text);
+      // Récupère l'erreur du AsyncNotifier si la guarded fn a échoué.
+      final ctrlState = ref.read(authControllerProvider);
+      if (ctrlState.hasError) {
+        final err = ctrlState.error;
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err is AppFailure ? err.message : 'Erreur: $err')),
+        );
+        return;
+      }
+      // Vérifie session décodée (storage + JWT OK).
+      final session = ref.read(authSessionProvider).value;
       if (!mounted) return;
+      if (session == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Login OK mais session non décodée. Vérifie console / storage.',
+            ),
+          ),
+        );
+        return;
+      }
       context.go(AppRoutes.home);
-    } on AppFailure catch (e) {
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
+        SnackBar(content: Text(e is AppFailure ? e.message : 'Erreur: $e')),
       );
     }
   }
