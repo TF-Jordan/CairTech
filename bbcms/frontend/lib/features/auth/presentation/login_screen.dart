@@ -49,8 +49,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final loading = ref.watch(authControllerProvider).isLoading;
     return Scaffold(
-      body: DecoratedBox(
-        decoration: const BoxDecoration(gradient: AppColors.softGradient),
+      body: ColoredBox(
+        color: AppColors.background,
         child: SafeArea(
           child: Center(
             child: SingleChildScrollView(
@@ -152,22 +152,16 @@ class _BrandHeader extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 56,
-          height: 56,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
-            gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
+            color: AppColors.accentSoft,
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: const Icon(Icons.menu_book, color: Colors.white, size: 28),
+          child: const Icon(Icons.menu_book_rounded,
+              color: AppColors.primary, size: 22),
         ),
-        const SizedBox(width: 14),
+        const SizedBox(width: 12),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

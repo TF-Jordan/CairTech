@@ -28,20 +28,20 @@ class MeetingsScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         children: [
           GlassCard(
-            gradient: AppColors.primaryGradient,
+            color: AppColors.surfaceAlt,
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text(
                   'Cycle de réunions',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
                 ),
                 SizedBox(height: 6),
                 Text(
                   'Planifier · Démarrer · Présence · Enregistrer',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),

@@ -98,7 +98,7 @@ class _CountBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GlassCard(
-      gradient: AppColors.primaryGradient,
+      color: AppColors.surfaceAlt,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,7 +106,7 @@ class _CountBanner extends StatelessWidget {
           const Text(
             'TOTAL REGISTERED BIBLE CLUBS',
             style: TextStyle(
-              color: Colors.white70,
+              color: AppColors.textSecondary,
               letterSpacing: 1.2,
               fontWeight: FontWeight.w600,
               fontSize: 12,
@@ -119,10 +119,11 @@ class _CountBanner extends StatelessWidget {
               Text(
                 '$count',
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 48,
-                  fontWeight: FontWeight.w800,
+                  color: AppColors.primary,
+                  fontSize: 44,
+                  fontWeight: FontWeight.w700,
                   height: 1,
+                  letterSpacing: -1,
                 ),
               ),
               const SizedBox(width: 12),
@@ -130,7 +131,7 @@ class _CountBanner extends StatelessWidget {
                 padding: EdgeInsets.only(bottom: 6),
                 child: Text(
                   'Clubs Active',
-                  style: TextStyle(color: Colors.white70),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
             ],

@@ -25,7 +25,7 @@ class EventDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           children: [
             GlassCard(
-              gradient: AppColors.primaryGradient,
+              color: AppColors.surfaceAlt,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -33,18 +33,18 @@ class EventDetailScreen extends ConsumerWidget {
                   Text(
                     e.title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text('${e.type.label} • ${e.status.label}',
-                      style: const TextStyle(color: Colors.white70)),
+                      style: const TextStyle(color: AppColors.textSecondary)),
                   if (e.location != null) ...[
                     const SizedBox(height: 4),
                     Text('📍 ${e.location}',
-                        style: const TextStyle(color: Colors.white)),
+                        style: const TextStyle(color: AppColors.textPrimary)),
                   ],
                 ],
               ),

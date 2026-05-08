@@ -30,18 +30,18 @@ class _SyncScreenState extends ConsumerState<SyncScreen> {
           padding: const EdgeInsets.all(20),
           children: [
             GlassCard(
-              gradient: AppColors.primaryGradient,
+              color: AppColors.surfaceAlt,
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text('Device',
-                      style: TextStyle(color: Colors.white70)),
+                      style: TextStyle(color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
                   Text(
                     engine.deviceId,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

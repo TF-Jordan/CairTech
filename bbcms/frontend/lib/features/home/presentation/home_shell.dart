@@ -77,22 +77,30 @@ class _AdminDrawer extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.primaryGradient,
-                borderRadius: BorderRadius.circular(20),
+                color: AppColors.surfaceAlt,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('BBCMS',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 22,
-                        letterSpacing: 2,
-                      )),
+                  const Text(
+                    'BBCMS',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 18,
+                      letterSpacing: 2,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(s?.email ?? '—',
-                      style: const TextStyle(color: Colors.white70)),
+                  Text(
+                    s?.email ?? '—',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),

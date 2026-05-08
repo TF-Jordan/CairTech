@@ -49,18 +49,18 @@ class _ResetScreenState extends ConsumerState<ResetScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           GlassCard(
-            gradient: AppColors.primaryGradient,
+            color: AppColors.surfaceAlt,
             padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 Text('Workflow annuel',
-                    style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                 SizedBox(height: 4),
                 Text(
                   'Snapshot · Archive PDF · Transferts L1→L7',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: AppColors.textPrimary,
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                   ),

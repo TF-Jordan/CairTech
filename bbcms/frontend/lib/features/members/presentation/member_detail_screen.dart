@@ -24,26 +24,26 @@ class MemberDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           children: [
             GlassCard(
-              gradient: AppColors.primaryGradient,
+              color: AppColors.surfaceAlt,
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
                   const CircleAvatar(
                     radius: 36,
-                    backgroundColor: Colors.white24,
-                    child: Icon(Icons.person, size: 36, color: Colors.white),
+                    backgroundColor: AppColors.accentSoft,
+                    child: Icon(Icons.person, size: 36, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     m.userAccountId,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   Text(
                     m.kind.label,
-                    style: const TextStyle(color: Colors.white70),
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
               ),

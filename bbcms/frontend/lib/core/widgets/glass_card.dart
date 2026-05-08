@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_colors.dart';
 
-/// Soft elevated card used across the app.
+/// Refined surface card — pure white, hairline border, no glow.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.gradient,
+    this.color,
     this.onTap,
     super.key,
   });
@@ -15,11 +16,12 @@ class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
   final Gradient? gradient;
+  final Color? color;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final shape = BorderRadius.circular(20);
+    final shape = BorderRadius.circular(16);
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -28,16 +30,9 @@ class GlassCard extends StatelessWidget {
         child: Ink(
           decoration: BoxDecoration(
             gradient: gradient,
-            color: gradient == null ? AppColors.surface : null,
+            color: gradient == null ? (color ?? AppColors.surface) : null,
             borderRadius: shape,
             border: Border.all(color: AppColors.border),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x0F2563EB),
-                blurRadius: 24,
-                offset: Offset(0, 8),
-              ),
-            ],
           ),
           padding: padding,
           child: child,

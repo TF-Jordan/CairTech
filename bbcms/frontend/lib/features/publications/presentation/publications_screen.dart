@@ -48,47 +48,37 @@ class _VersesTab extends ConsumerWidget {
           itemBuilder: (_, i) {
             final v = verses[i];
             return GlassCard(
-              gradient: i == 0 ? AppColors.primaryGradient : null,
+              color: i == 0 ? AppColors.surfaceAlt : AppColors.surface,
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     v.reference,
-                    style: TextStyle(
-                      color: i == 0 ? Colors.white70 : AppColors.textMuted,
+                    style: const TextStyle(
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1,
                       fontSize: 12,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    v.title,
-                    style: TextStyle(
-                      color: i == 0 ? Colors.white : AppColors.textPrimary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
+                  Text(v.title,
+                      style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 10),
                   Text(
                     v.verseText,
-                    style: TextStyle(
-                      color: i == 0 ? Colors.white : AppColors.textSecondary,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
                       fontStyle: FontStyle.italic,
-                      height: 1.5,
+                      height: 1.55,
                     ),
                   ),
                   if (v.reflectionText != null) ...[
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 10),
                     Text(
                       v.reflectionText!,
-                      style: TextStyle(
-                        color: i == 0
-                            ? Colors.white70
-                            : AppColors.textSecondary,
-                      ),
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
                   ],
                 ],

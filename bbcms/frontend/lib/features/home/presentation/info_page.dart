@@ -25,32 +25,28 @@ class InfoPage extends ConsumerWidget {
         padding: const EdgeInsets.all(20),
         children: [
           GlassCard(
-            gradient: AppColors.primaryGradient,
+            color: AppColors.surfaceAlt,
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'VISION',
-                  style: Theme.of(context)
-                      .textTheme
-                      .labelLarge
-                      ?.copyWith(color: Colors.white70, letterSpacing: 2),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: AppColors.primary,
+                        letterSpacing: 2,
+                      ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
+                const SizedBox(height: 10),
+                Text(
                   'CHF Bible Club',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                  ),
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Élever des disciples authentiques de Christ '
                   'dans chaque école et chaque profession.',
-                  style: TextStyle(color: Colors.white70, height: 1.5),
+                  style: Theme.of(context).textTheme.bodyMedium,
                 ),
               ],
             ),

@@ -33,7 +33,7 @@ class BibleClubDetailScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           children: [
             GlassCard(
-              gradient: AppColors.primaryGradient,
+              color: AppColors.surfaceAlt,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +41,7 @@ class BibleClubDetailScreen extends ConsumerWidget {
                   Text(
                     club.name,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 24,
                       fontWeight: FontWeight.w800,
                     ),
@@ -49,7 +49,7 @@ class BibleClubDetailScreen extends ConsumerWidget {
                   if (club.schoolName != null) ...[
                     const SizedBox(height: 4),
                     Text(club.schoolName!,
-                        style: const TextStyle(color: Colors.white70)),
+                        style: const TextStyle(color: AppColors.textSecondary)),
                   ],
                   const SizedBox(height: 12),
                   Wrap(
@@ -179,12 +179,12 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white24,
+        color: AppColors.accentSoft,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         '$label: $value',
-        style: const TextStyle(color: Colors.white, fontSize: 12),
+        style: const TextStyle(color: AppColors.textPrimary, fontSize: 12),
       ),
     );
   }

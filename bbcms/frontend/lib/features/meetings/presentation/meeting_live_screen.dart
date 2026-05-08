@@ -24,7 +24,7 @@ class MeetingLiveScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(20),
           children: [
             GlassCard(
-              gradient: AppColors.primaryGradient,
+              color: AppColors.surfaceAlt,
               padding: const EdgeInsets.all(24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +32,7 @@ class MeetingLiveScreen extends ConsumerWidget {
                   Text(
                     m.title,
                     style: const TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
                     ),
@@ -40,7 +40,7 @@ class MeetingLiveScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${m.type.label} • ${m.status.label}',
-                    style: const TextStyle(color: Colors.white70),
+                    style: const TextStyle(color: AppColors.textSecondary),
                   ),
                 ],
               ),

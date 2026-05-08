@@ -20,42 +20,48 @@ class AppTheme {
 
     final textTheme = GoogleFonts.interTextTheme(base.textTheme).copyWith(
       displayLarge: GoogleFonts.spaceGrotesk(
-        fontSize: 48,
-        fontWeight: FontWeight.w700,
+        fontSize: 44,
+        fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
-        letterSpacing: -1,
+        letterSpacing: -1.2,
       ),
       displayMedium: GoogleFonts.spaceGrotesk(
-        fontSize: 36,
-        fontWeight: FontWeight.w700,
+        fontSize: 32,
+        fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
+        letterSpacing: -0.8,
       ),
       headlineMedium: GoogleFonts.spaceGrotesk(
         fontSize: 24,
-        fontWeight: FontWeight.w700,
+        fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
+        letterSpacing: -0.4,
       ),
       headlineSmall: GoogleFonts.spaceGrotesk(
         fontSize: 20,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
       ),
-      titleLarge: GoogleFonts.spaceGrotesk(
-        fontSize: 18,
+      titleLarge: GoogleFonts.inter(
+        fontSize: 17,
         fontWeight: FontWeight.w600,
         color: AppColors.textPrimary,
+        letterSpacing: -0.2,
       ),
       bodyLarge: GoogleFonts.inter(
-        fontSize: 16,
+        fontSize: 15,
         color: AppColors.textPrimary,
+        height: 1.5,
       ),
       bodyMedium: GoogleFonts.inter(
         fontSize: 14,
         color: AppColors.textSecondary,
+        height: 1.5,
       ),
       labelLarge: GoogleFonts.inter(
         fontSize: 14,
         fontWeight: FontWeight.w600,
+        letterSpacing: 0.1,
       ),
     );
 
@@ -67,11 +73,13 @@ class AppTheme {
         backgroundColor: AppColors.background,
         foregroundColor: AppColors.textPrimary,
         elevation: 0,
+        scrolledUnderElevation: 0,
         centerTitle: false,
         titleTextStyle: GoogleFonts.spaceGrotesk(
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
+          letterSpacing: -0.2,
         ),
       ),
       cardTheme: CardThemeData(
@@ -79,7 +87,7 @@ class AppTheme {
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: AppColors.border),
         ),
       ),
@@ -88,23 +96,25 @@ class AppTheme {
           backgroundColor: AppColors.primary,
           foregroundColor: AppColors.textOnPrimary,
           elevation: 0,
-          minimumSize: const Size.fromHeight(52),
+          shadowColor: Colors.transparent,
+          minimumSize: const Size.fromHeight(48),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: GoogleFonts.inter(
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: FontWeight.w600,
+            letterSpacing: 0.1,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           foregroundColor: AppColors.primary,
-          minimumSize: const Size.fromHeight(52),
-          side: const BorderSide(color: AppColors.primary, width: 1.5),
+          minimumSize: const Size.fromHeight(48),
+          side: const BorderSide(color: AppColors.border, width: 1),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),
@@ -113,26 +123,30 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.surface,
+        fillColor: AppColors.surfaceAlt,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
-          vertical: 16,
+          vertical: 14,
         ),
         hintStyle: GoogleFonts.inter(color: AppColors.textMuted),
+        labelStyle: GoogleFonts.inter(
+          color: AppColors.textSecondary,
+          fontSize: 14,
+        ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.danger),
         ),
       ),
@@ -142,23 +156,25 @@ class AppTheme {
         thickness: 1,
       ),
       chipTheme: ChipThemeData(
-        backgroundColor: AppColors.primaryContainer,
+        backgroundColor: AppColors.accentSoft,
         labelStyle: GoogleFonts.inter(
           color: AppColors.primary,
           fontWeight: FontWeight.w600,
+          fontSize: 12,
         ),
         side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(999),
         ),
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.surface,
-        indicatorColor: AppColors.primaryContainer,
+        indicatorColor: AppColors.accentSoft,
         labelTextStyle: WidgetStatePropertyAll(
           GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600),
         ),
-        height: 72,
+        height: 68,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
       ),
@@ -167,7 +183,7 @@ class AppTheme {
         contentTextStyle: GoogleFonts.inter(color: Colors.white),
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
         ),
       ),
     );

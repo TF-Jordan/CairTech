@@ -22,32 +22,29 @@ class ProfileScreen extends ConsumerWidget {
         child: ListView(
           children: [
             GlassCard(
-              gradient: AppColors.primaryGradient,
-              padding: const EdgeInsets.all(24),
+              color: AppColors.surfaceAlt,
+              padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
                   const CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.white24,
-                    child: Icon(Icons.person, color: Colors.white, size: 32),
+                    radius: 28,
+                    backgroundColor: AppColors.accentSoft,
+                    child: Icon(Icons.person,
+                        color: AppColors.primary, size: 28),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           session?.email ?? '—',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: Theme.of(context).textTheme.titleLarge,
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 2),
                         Text(
                           session?.userType ?? '—',
-                          style: const TextStyle(color: Colors.white70),
+                          style: Theme.of(context).textTheme.bodyMedium,
                         ),
                       ],
                     ),
