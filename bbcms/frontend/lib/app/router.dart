@@ -22,6 +22,9 @@ import '../features/meetings/presentation/meetings_screen.dart';
 import '../features/events/presentation/event_detail_screen.dart';
 import '../features/events/presentation/event_plan_screen.dart';
 import '../features/events/presentation/events_list_screen.dart';
+import '../features/evangelism/presentation/evangelism_screen.dart';
+import '../features/discipleship/presentation/discipleship_screen.dart';
+import '../features/intercession/presentation/intercession_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 
@@ -106,6 +109,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                 EventDetailScreen(id: state.pathParameters['id']!),
           ),
         ],
+      ),
+      GoRoute(
+        path: '/evangelism',
+        builder: (_, __) => const EvangelismScreen(),
+      ),
+      GoRoute(
+        path: '/discipleship',
+        builder: (_, __) => const DiscipleshipScreen(),
+      ),
+      GoRoute(
+        path: '/intercession',
+        builder: (_, __) => const IntercessionScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
