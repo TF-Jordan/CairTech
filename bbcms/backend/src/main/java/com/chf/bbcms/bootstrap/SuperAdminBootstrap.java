@@ -74,14 +74,14 @@ public class SuperAdminBootstrap {
     private Mono<Void> bootstrap() {
         String email = props.getEmail().trim().toLowerCase();
         return repairLegacyUserTypes()
-                .then(userRepository.findByEmail(email)
-                        .flatMap(existing -> {
-                            log.info("Super-admin '{}' already exists (status={}); skipping creation",
-                                    email, existing.getStatus());
-                            return ensureRoleAssignment(existing.getId());
-                        })
-                        .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)))
-                        .then());
+                .then(userRepository.findByEmail(email))
+                .flatMap(existing -> {
+                    log.info("Super-admin '{}' already exists (status={}); skipping creation",
+                            email, existing.getStatus());
+                    return ensureRoleAssignment(existing.getId()).thenReturn(true);
+                })
+                .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)).thenReturn(true))
+                .then();
     }
 
     /**
