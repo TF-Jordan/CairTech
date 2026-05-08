@@ -26,6 +26,7 @@ import '../features/evangelism/presentation/evangelism_screen.dart';
 import '../features/discipleship/presentation/discipleship_screen.dart';
 import '../features/intercession/presentation/intercession_screen.dart';
 import '../features/finance/presentation/finance_screen.dart';
+import '../features/dashboards/presentation/dashboard_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 
@@ -126,6 +127,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/finance',
         builder: (_, __) => const FinanceScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard/national',
+        builder: (_, __) => const DashboardScreen(),
+      ),
+      GoRoute(
+        path: '/dashboard/bbc/:id',
+        builder: (_, state) =>
+            DashboardScreen(bibleClubId: state.pathParameters['id']),
       ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
