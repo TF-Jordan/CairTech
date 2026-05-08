@@ -28,6 +28,7 @@ import '../features/intercession/presentation/intercession_screen.dart';
 import '../features/finance/presentation/finance_screen.dart';
 import '../features/dashboards/presentation/dashboard_screen.dart';
 import '../features/reset/presentation/reset_screen.dart';
+import '../features/sync/presentation/sync_screen.dart';
 import '../features/publications/presentation/publications_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 
@@ -142,6 +143,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/clubs/:id/reset',
         builder: (_, state) =>
             ResetScreen(bibleClubId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/sync',
+        builder: (_, __) => const SyncScreen(),
       ),
       ShellRoute(
         builder: (context, state, child) => HomeShell(child: child),
