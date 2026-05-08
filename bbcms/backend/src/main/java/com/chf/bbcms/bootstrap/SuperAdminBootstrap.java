@@ -80,9 +80,10 @@ public class SuperAdminBootstrap {
                     // Normalise les valeurs en DB (corrige user_type orphelin ex 'SYSTEM_ADMIN')
                     // et garantit que le compte est ACTIVE.
                     return normalizeRow(existing.getId())
-                            .then(ensureRoleAssignment(existing.getId()));
+                            .then(ensureRoleAssignment(existing.getId()))
+                            .thenReturn(existing.getId());
                 })
-                .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)))
+                .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email).thenReturn(UUID.randomUUID())))
                 .then();
     }
 
