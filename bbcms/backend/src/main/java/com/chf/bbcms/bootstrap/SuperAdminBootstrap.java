@@ -75,11 +75,28 @@ public class SuperAdminBootstrap {
         String email = props.getEmail().trim().toLowerCase();
         return userRepository.findByEmail(email)
                 .flatMap(existing -> {
-                    log.info("Super-admin '{}' already exists (status={}); skipping creation",
+                    log.info("Super-admin '{}' already exists (status={}); ensuring role + user_type",
                             email, existing.getStatus());
-                    return ensureRoleAssignment(existing.getId());
+                    // Normalise les valeurs en DB (corrige user_type orphelin ex 'SYSTEM_ADMIN')
+                    // et garantit que le compte est ACTIVE.
+                    return normalizeRow(existing.getId())
+                            .then(ensureRoleAssignment(existing.getId()));
                 })
                 .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)))
+                .then();
+    }
+
+    private Mono<Void> normalizeRow(UUID userId) {
+        return client.sql("""
+                UPDATE bbcms_user_account
+                   SET status = 'ACTIVE',
+                       user_type = CASE
+                           WHEN user_type IN ('VISITOR','STUDENT','PROFESSIONAL','NATIONAL_LEADER') THEN user_type
+                           ELSE 'NATIONAL_LEADER'
+                       END
+                 WHERE id = :id
+                """)
+                .bind("id", userId)
                 .then();
     }
 

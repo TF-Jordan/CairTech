@@ -22,9 +22,28 @@ final class UserAccountMapper {
                 row.getDateBornAgain(), row.getHowBornAgain(), row.getDateEntered(),
                 row.getPictureFileId());
         return UserAccount.rehydrate(row.getId(), row.getEmail(), row.getPasswordHash(), row.getPhone(),
-                UserStatus.valueOf(row.getStatus()), UserType.valueOf(row.getUserType()),
+                parseStatus(row.getStatus()), parseUserType(row.getUserType()),
                 row.getLastLoginAt(), row.getLocale(), profile, row.getAnonymizedAt(),
                 row.getCreatedAt(), row.getUpdatedAt(), row.getVersion());
+    }
+
+    private static UserStatus parseStatus(String raw) {
+        try {
+            return UserStatus.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            return UserStatus.PENDING;
+        }
+    }
+
+    private static UserType parseUserType(String raw) {
+        try {
+            return UserType.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            // Tolérant: si la DB contient une valeur orpheline (ex: 'SYSTEM_ADMIN' qui est
+            // un rôle, pas un user type), on retombe sur NATIONAL_LEADER pour ne pas casser
+            // la lecture. Le bootstrap normalise ensuite.
+            return UserType.NATIONAL_LEADER;
+        }
     }
 
     static UserAccountRow toRow(UserAccount account, UUID actorId) {
