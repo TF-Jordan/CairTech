@@ -182,4 +182,11 @@ class ApiEndpoints {
   // SYNC
   // --------------------------------------------------------------------------
   static const String syncChanges = '/sync/changes';
+
+  // --------------------------------------------------------------------------
+  // PUBLIC REGISTRY (no auth — used by the registration form)
+  // --------------------------------------------------------------------------
+  static const String publicBibleClubs = '/public/bible-clubs';
+  static String publicLevels(String bibleClubId) =>
+      '/public/bible-clubs/$bibleClubId/levels';
 }

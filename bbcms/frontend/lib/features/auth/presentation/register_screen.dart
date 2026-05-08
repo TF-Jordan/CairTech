@@ -7,6 +7,7 @@ import '../../../core/error/failures.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/primary_button.dart';
 import '../application/auth_controller.dart';
+import '../data/registry_repository.dart';
 import '../domain/auth_models.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
@@ -37,8 +38,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // Step 3 — Membership
   UserType _type = UserType.student;
   final _profession = TextEditingController();
-  final _bibleClubId = TextEditingController();
-  final _levelId = TextEditingController();
+  String? _bibleClubId;
+  String? _levelId;
 
   bool _loading = false;
 
@@ -52,8 +53,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       _password,
       _howBornAgain,
       _profession,
-      _bibleClubId,
-      _levelId,
     ]) {
       c.dispose();
     }
@@ -74,12 +73,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         gender: _gender,
         requestedType: _type,
         profession: _type == UserType.student ? null : _profession.text.trim(),
-        bibleClubId: _type == UserType.student && _bibleClubId.text.isNotEmpty
-            ? _bibleClubId.text.trim()
-            : null,
-        levelId: _type == UserType.student && _levelId.text.isNotEmpty
-            ? _levelId.text.trim()
-            : null,
+        bibleClubId:
+            _type == UserType.student ? _bibleClubId : null,
+        levelId: _type == UserType.student ? _levelId : null,
         dateBornAgain: _dateBornAgain,
         howBornAgain: _howBornAgain.text.trim().isEmpty
             ? null
@@ -156,7 +152,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         profession: _profession,
                         bibleClubId: _bibleClubId,
                         levelId: _levelId,
-                        onType: (t) => setState(() => _type = t),
+                        onType: (t) => setState(() {
+                          _type = t;
+                          if (t != UserType.student) {
+                            _bibleClubId = null;
+                            _levelId = null;
+                          }
+                        }),
+                        onBibleClub: (id) => setState(() {
+                          _bibleClubId = id;
+                          _levelId = null;
+                        }),
+                        onLevel: (id) => setState(() => _levelId = id),
                       ),
                     ],
                   ),
@@ -393,7 +400,7 @@ class _StepSpiritual extends StatelessWidget {
   }
 }
 
-class _StepMembership extends StatelessWidget {
+class _StepMembership extends ConsumerWidget {
   const _StepMembership({
     required this.formKey,
     required this.type,
@@ -401,17 +408,21 @@ class _StepMembership extends StatelessWidget {
     required this.bibleClubId,
     required this.levelId,
     required this.onType,
+    required this.onBibleClub,
+    required this.onLevel,
   });
 
   final GlobalKey<FormState> formKey;
   final UserType type;
   final TextEditingController profession;
-  final TextEditingController bibleClubId;
-  final TextEditingController levelId;
+  final String? bibleClubId;
+  final String? levelId;
   final ValueChanged<UserType> onType;
+  final ValueChanged<String?> onBibleClub;
+  final ValueChanged<String?> onLevel;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Form(
       key: formKey,
       child: ListView(
@@ -437,22 +448,14 @@ class _StepMembership extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           if (type == UserType.student) ...[
-            TextFormField(
-              controller: bibleClubId,
-              decoration: const InputDecoration(
-                labelText: 'Bible Club (UUID)',
-                helperText:
-                    'Saisissez l\'ID du Bible Club. Sera un sélecteur en V2.',
-              ),
-            ),
+            _BibleClubPicker(value: bibleClubId, onChanged: onBibleClub),
             const SizedBox(height: 12),
-            TextFormField(
-              controller: levelId,
-              decoration: const InputDecoration(
-                labelText: 'Classe (UUID)',
-                helperText: 'ID de la classe / niveau.',
+            if (bibleClubId != null)
+              _LevelPicker(
+                bibleClubId: bibleClubId!,
+                value: levelId,
+                onChanged: onLevel,
               ),
-            ),
           ] else
             TextFormField(
               controller: profession,
@@ -504,6 +507,162 @@ class _DateField extends StatelessWidget {
           suffixIcon: const Icon(Icons.calendar_today_outlined),
         ),
         child: Text(txt.isEmpty ? 'mm/jj/aaaa' : txt),
+      ),
+    );
+  }
+}
+
+class _BibleClubPicker extends ConsumerWidget {
+  const _BibleClubPicker({required this.value, required this.onChanged});
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncList = ref.watch(publicBibleClubsProvider);
+    return asyncList.when(
+      loading: () => const _PickerLoading(label: 'Bible Club'),
+      error: (e, _) => _PickerError(
+        label: 'Bible Club',
+        message: e.toString(),
+        onRetry: () => ref.invalidate(publicBibleClubsProvider),
+      ),
+      data: (clubs) => DropdownButtonFormField<String>(
+        value: clubs.any((c) => c.id == value) ? value : null,
+        isExpanded: true,
+        decoration: const InputDecoration(
+          labelText: 'Bible Club *',
+          prefixIcon: Icon(Icons.account_tree_outlined),
+        ),
+        items: clubs
+            .map(
+              (c) => DropdownMenuItem(
+                value: c.id,
+                child: Text(
+                  c.schoolName == null
+                      ? c.name
+                      : '${c.name} — ${c.schoolName}',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            )
+            .toList(),
+        onChanged: onChanged,
+        validator: (v) => v == null ? 'Sélectionnez un Bible Club' : null,
+      ),
+    );
+  }
+}
+
+class _LevelPicker extends ConsumerWidget {
+  const _LevelPicker({
+    required this.bibleClubId,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String bibleClubId;
+  final String? value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncList = ref.watch(publicLevelsProvider(bibleClubId));
+    return asyncList.when(
+      loading: () => const _PickerLoading(label: 'Classe'),
+      error: (e, _) => _PickerError(
+        label: 'Classe',
+        message: e.toString(),
+        onRetry: () => ref.invalidate(publicLevelsProvider(bibleClubId)),
+      ),
+      data: (levels) {
+        if (levels.isEmpty) {
+          return const InputDecorator(
+            decoration: InputDecoration(
+              labelText: 'Classe',
+              helperText:
+                  'Aucune classe enregistrée pour ce Bible Club. '
+                  'Contactez un leader.',
+            ),
+            child: Text('—'),
+          );
+        }
+        return DropdownButtonFormField<String>(
+          value: levels.any((l) => l.id == value) ? value : null,
+          isExpanded: true,
+          decoration: const InputDecoration(
+            labelText: 'Classe *',
+            prefixIcon: Icon(Icons.layers_outlined),
+          ),
+          items: levels
+              .map(
+                (l) => DropdownMenuItem(
+                  value: l.id,
+                  child: Text('${l.type} — ${l.name}'),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+          validator: (v) => v == null ? 'Sélectionnez une classe' : null,
+        );
+      },
+    );
+  }
+}
+
+class _PickerLoading extends StatelessWidget {
+  const _PickerLoading({required this.label});
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(labelText: label),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          SizedBox(width: 12),
+          Text('Chargement…'),
+        ],
+      ),
+    );
+  }
+}
+
+class _PickerError extends StatelessWidget {
+  const _PickerError({
+    required this.label,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String label;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        errorText: 'Impossible de charger',
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              message,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: AppColors.textMuted),
+            ),
+          ),
+          TextButton(onPressed: onRetry, child: const Text('Réessayer')),
+        ],
       ),
     );
   }

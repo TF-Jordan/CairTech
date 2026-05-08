@@ -30,6 +30,7 @@ public class SecurityConfiguration {
                                 "/api/v1/bbcms/auth/reset-password",
                                 "/api/v1/bbcms/users/activate",
                                 "/api/v1/bbcms/users",
+                                "/api/v1/bbcms/public/**",
                                 "/actuator/health",
                                 "/actuator/info",
                                 "/actuator/prometheus",
