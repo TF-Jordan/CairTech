@@ -14,7 +14,7 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(authSessionProvider).valueOrNull;
+    final session = ref.watch(authSessionProvider).value;
     return Scaffold(
       appBar: AppBar(title: const Text('Profil')),
       body: Padding(

@@ -18,7 +18,7 @@ class PermGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final session = ref.watch(authSessionProvider).valueOrNull;
+    final session = ref.watch(authSessionProvider).value;
     if (session == null || !session.can(perm)) {
       return fallback ?? const SizedBox.shrink();
     }

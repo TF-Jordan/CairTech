@@ -20,7 +20,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await ref.read(authSessionProvider.notifier).refresh();
       if (!mounted) return;
-      final session = ref.read(authSessionProvider).valueOrNull;
+      final session = ref.read(authSessionProvider).value;
       context.go(session == null ? AppRoutes.login : AppRoutes.home);
     });
   }

@@ -51,7 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: AppRoutes.splash,
     refreshListenable: _AuthListenable(ref),
     redirect: (context, state) {
-      final session = ref.read(authSessionProvider).valueOrNull;
+      final session = ref.read(authSessionProvider).value;
       final loggedIn = session != null;
       final loc = state.matchedLocation;
       final isAuthRoute = loc == AppRoutes.login ||

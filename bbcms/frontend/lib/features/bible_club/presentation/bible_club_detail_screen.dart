@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/perm_gate.dart';
 import '../application/bible_club_providers.dart';
+import '../data/bible_club_repository.dart';
 import '../domain/bible_club_models.dart';
 
 class BibleClubDetailScreen extends ConsumerWidget {

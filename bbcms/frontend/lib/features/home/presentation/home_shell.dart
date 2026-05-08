@@ -40,7 +40,7 @@ class HomeShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final loc = GoRouterState.of(context).matchedLocation;
     final idx = _indexFor(loc);
-    final session = ref.watch(authSessionProvider).valueOrNull;
+    final session = ref.watch(authSessionProvider).value;
 
     return Scaffold(
       drawer: _AdminDrawer(session: session),
