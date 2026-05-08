@@ -73,13 +73,35 @@ public class SuperAdminBootstrap {
 
     private Mono<Void> bootstrap() {
         String email = props.getEmail().trim().toLowerCase();
-        return userRepository.findByEmail(email)
-                .flatMap(existing -> {
-                    log.info("Super-admin '{}' already exists (status={}); skipping creation",
-                            email, existing.getStatus());
-                    return ensureRoleAssignment(existing.getId());
+        return repairLegacyUserTypes()
+                .then(userRepository.findByEmail(email)
+                        .flatMap(existing -> {
+                            log.info("Super-admin '{}' already exists (status={}); skipping creation",
+                                    email, existing.getStatus());
+                            return ensureRoleAssignment(existing.getId());
+                        })
+                        .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)))
+                        .then());
+    }
+
+    /**
+     * Migration de sécurité: d'anciens déploiements ont pu écrire user_type='SYSTEM_ADMIN'
+     * (qui n'est pas une valeur de l'enum {@link UserType}). On ramène toute valeur
+     * inconnue à NATIONAL_LEADER pour garantir le démarrage. Idempotent.
+     */
+    private Mono<Void> repairLegacyUserTypes() {
+        return client.sql("""
+                UPDATE bbcms_user_account
+                   SET user_type = 'NATIONAL_LEADER'
+                 WHERE user_type NOT IN ('VISITOR','STUDENT','PROFESSIONAL','NATIONAL_LEADER')
+                """)
+                .fetch()
+                .rowsUpdated()
+                .doOnNext(n -> {
+                    if (n != null && n > 0) {
+                        log.warn("Repaired {} user_account row(s) with invalid user_type", n);
+                    }
                 })
-                .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)))
                 .then();
     }
 

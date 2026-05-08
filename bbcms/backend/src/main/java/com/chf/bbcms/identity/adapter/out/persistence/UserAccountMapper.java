@@ -5,15 +5,28 @@ import com.chf.bbcms.identity.domain.UserAccount;
 import com.chf.bbcms.identity.domain.UserProfile;
 import com.chf.bbcms.identity.domain.UserStatus;
 import com.chf.bbcms.identity.domain.UserType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.UUID;
 
 final class UserAccountMapper {
 
+    private static final Logger log = LoggerFactory.getLogger(UserAccountMapper.class);
     private static final UUID SYSTEM = UUID.fromString("00000000-0000-0000-0000-000000000000");
 
     private UserAccountMapper() {}
+
+    private static UserType safeUserType(String raw) {
+        if (raw == null) return UserType.VISITOR;
+        try {
+            return UserType.valueOf(raw);
+        } catch (IllegalArgumentException ex) {
+            log.warn("Unknown user_type='{}' in DB; falling back to NATIONAL_LEADER", raw);
+            return UserType.NATIONAL_LEADER;
+        }
+    }
 
     static UserAccount toDomain(UserAccountRow row) {
         UserProfile profile = new UserProfile(
@@ -22,7 +35,7 @@ final class UserAccountMapper {
                 row.getDateBornAgain(), row.getHowBornAgain(), row.getDateEntered(),
                 row.getPictureFileId());
         return UserAccount.rehydrate(row.getId(), row.getEmail(), row.getPasswordHash(), row.getPhone(),
-                UserStatus.valueOf(row.getStatus()), UserType.valueOf(row.getUserType()),
+                UserStatus.valueOf(row.getStatus()), safeUserType(row.getUserType()),
                 row.getLastLoginAt(), row.getLocale(), profile, row.getAnonymizedAt(),
                 row.getCreatedAt(), row.getUpdatedAt(), row.getVersion());
     }
