@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/network/dio_client.dart';
 import '../../core/storage/secure_token_store.dart';
 import '../../core/utils/jwt_session.dart';
 
@@ -59,8 +61,25 @@ class AuthController extends StateNotifier<AuthState> {
     } on ApiException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
       return false;
+    } on DioException catch (e) {
+      // Network-level failures (host unreachable, timeout, CORS, etc.) bypass
+      // the Dio error interceptor's ApiException wrapping → expose the cause
+      // so the user can fix wiring (wrong API_BASE_URL, backend not running).
+      final String detail = switch (e.type) {
+        DioExceptionType.connectionTimeout ||
+        DioExceptionType.sendTimeout ||
+        DioExceptionType.receiveTimeout =>
+          'Délai dépassé en contactant $apiBaseUrl',
+        DioExceptionType.connectionError =>
+          'Backend injoignable à $apiBaseUrl — vérifiez qu\'il tourne et que l\'URL est correcte (--dart-define=API_BASE_URL=...)',
+        DioExceptionType.badCertificate => 'Certificat TLS invalide',
+        DioExceptionType.cancel => 'Requête annulée',
+        _ => e.message ?? 'Erreur réseau',
+      };
+      state = state.copyWith(loading: false, error: detail);
+      return false;
     } catch (e) {
-      state = state.copyWith(loading: false, error: 'Connexion impossible');
+      state = state.copyWith(loading: false, error: 'Erreur: $e');
       return false;
     }
   }
