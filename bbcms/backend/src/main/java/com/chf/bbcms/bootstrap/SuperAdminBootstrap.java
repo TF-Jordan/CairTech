@@ -102,6 +102,7 @@ public class SuperAdminBootstrap {
                                 """)
                         .bind("hash", hash)
                         .bind("now", Instant.now())
+                        .bind("id", userId)
                         .then())
                 .doOnSuccess(v ->
                         log.info("Super-admin password rotated (id={})", userId));
