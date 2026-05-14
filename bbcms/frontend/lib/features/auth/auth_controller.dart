@@ -51,7 +51,8 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(loading: true, error: null);
     try {
       final ApiClient api = _ref.read(apiClientProvider);
-      final Map<String, dynamic> data = await api.login(email, password);
+      final Map<String, dynamic> data =
+          await api.login(email, password).unwrapApi();
       final String access = data['accessToken'] as String;
       final String refresh = data['refreshToken'] as String;
       await _ref.read(tokenStoreProvider).save(TokenPair(accessToken: access, refreshToken: refresh));
@@ -59,12 +60,19 @@ class AuthController extends StateNotifier<AuthState> {
       state = state.copyWith(session: JwtSession.parse(access), loading: false);
       return true;
     } on ApiException catch (e) {
-      state = state.copyWith(loading: false, error: e.message);
+      // Backend rejected the call (401 wrong credentials, 429 rate limit, ...).
+      final String msg = switch (e.code) {
+        'BBCMS_INVALID_CREDENTIALS' => 'Email ou mot de passe incorrect',
+        'BBCMS_RATE_LIMITED' =>
+          'Trop de tentatives — patientez 1 minute avant de réessayer',
+        'BBCMS_USER_NOT_ACTIVE' =>
+          'Compte non encore activé — vérifiez votre email',
+        _ => '${e.message} (${e.code})',
+      };
+      state = state.copyWith(loading: false, error: msg);
       return false;
     } on DioException catch (e) {
-      // Network-level failures (host unreachable, timeout, CORS, etc.) bypass
-      // the Dio error interceptor's ApiException wrapping → expose the cause
-      // so the user can fix wiring (wrong API_BASE_URL, backend not running).
+      // Genuine network failure (host unreachable, timeout, CORS, …).
       final String detail = switch (e.type) {
         DioExceptionType.connectionTimeout ||
         DioExceptionType.sendTimeout ||
@@ -74,7 +82,7 @@ class AuthController extends StateNotifier<AuthState> {
           'Backend injoignable à $apiBaseUrl — vérifiez qu\'il tourne et que l\'URL est correcte (--dart-define=API_BASE_URL=...)',
         DioExceptionType.badCertificate => 'Certificat TLS invalide',
         DioExceptionType.cancel => 'Requête annulée',
-        _ => e.message ?? 'Erreur réseau',
+        _ => e.message ?? 'Erreur réseau (${e.type.name})',
       };
       state = state.copyWith(loading: false, error: detail);
       return false;

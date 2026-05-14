@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 /// Normalized API error consumed by the UI layer.
 class ApiException implements Exception {
   ApiException({
@@ -34,4 +36,19 @@ class ApiException implements Exception {
 
   @override
   String toString() => '[$code] $message (HTTP ${statusCode ?? '?'})';
+}
+
+/// Awaits a Dio call and, if it rejects with a [DioException] that wraps an
+/// [ApiException] in its `error` field (which our interceptor does for any
+/// HTTP 4xx/5xx response), unwraps and rethrows the [ApiException] directly.
+/// Genuine network failures (timeouts, host unreachable) are rethrown as-is.
+extension UnwrapApi<T> on Future<T> {
+  Future<T> unwrapApi() async {
+    try {
+      return await this;
+    } on DioException catch (e) {
+      if (e.error is ApiException) throw e.error as ApiException;
+      rethrow;
+    }
+  }
 }

@@ -8,6 +8,11 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.SecurityWebFiltersOrder;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebFluxSecurity
@@ -15,9 +20,26 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 public class SecurityConfiguration {
 
     @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration cfg = new CorsConfiguration();
+        // Permissive on dev — locks down trivially via property in V2.
+        cfg.setAllowedOriginPatterns(List.of("*"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("*"));
+        cfg.setExposedHeaders(List.of("Authorization", "X-Device-Id"));
+        cfg.setAllowCredentials(true);
+        cfg.setMaxAge(3600L);
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", cfg);
+        return src;
+    }
+
+    @Bean
     public SecurityWebFilterChain securityFilterChain(ServerHttpSecurity http,
-                                                      JwtAuthenticationWebFilter jwtFilter) {
+                                                      JwtAuthenticationWebFilter jwtFilter,
+                                                      CorsConfigurationSource cors) {
         return http
+                .cors(c -> c.configurationSource(cors))
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
