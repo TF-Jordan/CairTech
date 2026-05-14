@@ -8,6 +8,7 @@ import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Repository;
 import reactor.core.publisher.Flux;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.UUID;
 
@@ -31,7 +32,13 @@ public class R2dbcUserRoleAssignmentRepository implements UserRoleAssignmentRepo
 
     private UserRoleAssignment toDomain(UserRoleAssignmentRow row) {
         try {
-            UserRoleAssignment ura = UserRoleAssignment.class.getDeclaredConstructor().newInstance();
+            // Le constructeur sans-arg de l'agrégat est `protected` (pattern hexagonal :
+            // l'instanciation passe normalement par une factory statique du domaine).
+            // Pour la rehydratation depuis la BD, on l'ouvre via setAccessible(true).
+            Constructor<UserRoleAssignment> ctor =
+                    UserRoleAssignment.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            UserRoleAssignment ura = ctor.newInstance();
             setField(ura, "id", row.getId());
             setField(ura, "userAccountId", row.getUserAccountId());
             setField(ura, "roleId", row.getRoleId());
