@@ -62,7 +62,9 @@ class AuthController extends StateNotifier<AuthState> {
     } on ApiException catch (e) {
       // Backend rejected the call (401 wrong credentials, 429 rate limit, ...).
       final String msg = switch (e.code) {
-        'BBCMS_INVALID_CREDENTIALS' => 'Email ou mot de passe incorrect',
+        'BBCMS_BAD_CREDENTIALS' ||
+        'BBCMS_INVALID_CREDENTIALS' =>
+          'Email ou mot de passe incorrect',
         'BBCMS_RATE_LIMITED' =>
           'Trop de tentatives — patientez 1 minute avant de réessayer',
         'BBCMS_USER_NOT_ACTIVE' =>

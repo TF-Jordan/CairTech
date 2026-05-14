@@ -76,12 +76,35 @@ public class SuperAdminBootstrap {
         return repairLegacyUserTypes()
                 .then(userRepository.findByEmail(email))
                 .flatMap(existing -> {
+                    if (props.isForcePasswordReset()) {
+                        log.warn("FORCE_PASSWORD_RESET=true -> rotating super-admin '{}' password",
+                                email);
+                        return rotatePassword(existing.getId())
+                                .then(ensureRoleAssignment(existing.getId()))
+                                .thenReturn(true);
+                    }
                     log.info("Super-admin '{}' already exists (status={}); skipping creation",
                             email, existing.getStatus());
                     return ensureRoleAssignment(existing.getId()).thenReturn(true);
                 })
                 .switchIfEmpty(Mono.defer(() -> createSuperAdmin(email)).thenReturn(true))
                 .then();
+    }
+
+    private Mono<Void> rotatePassword(UUID userId) {
+        return passwordHasher.hash(props.getPassword())
+                .flatMap(hash -> client.sql("""
+                                UPDATE bbcms_user_account
+                                   SET password_hash = :hash,
+                                       status = 'ACTIVE',
+                                       updated_at = :now
+                                 WHERE id = :id
+                                """)
+                        .bind("hash", hash)
+                        .bind("now", Instant.now())
+                        .then())
+                .doOnSuccess(v ->
+                        log.info("Super-admin password rotated (id={})", userId));
     }
 
     /**

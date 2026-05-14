@@ -77,6 +77,9 @@ bbcms:
       password: ${BBCMS_SUPER_ADMIN_PASSWORD:}
       first-names: ${BBCMS_SUPER_ADMIN_FIRST_NAMES:Super}
       next-names: ${BBCMS_SUPER_ADMIN_NEXT_NAMES:Admin}
+      # Si true au démarrage suivant, le mot de passe ci-dessus est réappliqué
+      # au compte existant (rotation hors-bande). Remettre à false aussitôt.
+      force-password-reset: ${BBCMS_SUPER_ADMIN_FORCE_PASSWORD_RESET:false}
 
 logging:
   level:
