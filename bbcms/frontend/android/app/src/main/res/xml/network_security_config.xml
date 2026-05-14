@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Permits HTTP cleartext traffic to local dev backends only.
+  Production deployments MUST switch to HTTPS and remove this file (or
+  restrict <domain> entries to your real API host).
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Android emulator loopback to host -->
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <!-- Localhost (Linux/macOS/Windows desktop, iOS simulator, dev tools) -->
+        <domain includeSubdomains="true">localhost</domain>
+        <!-- Common LAN ranges — adjust to your dev network if needed -->
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>

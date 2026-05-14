@@ -15,18 +15,50 @@ backend Spring Boot dans `../backend/`.
 
 ## Démarrage
 
+### Première fois — scaffolder les dossiers de plateforme
+
+Le repo versionne uniquement `lib/`, `test/`, `pubspec.yaml` et les configs
+spécifiques (`android/app/src/main/res/xml/network_security_config.xml`,
+patches `*.md`). Les dossiers `android/`, `ios/`, `linux/`, etc. sont générés
+par Flutter :
+
 ```bash
-# Pré-requis : Flutter 3.24, Android SDK, backend démarré (cf ../backend/README.md)
-
+cd bbcms/frontend
+flutter create . --platforms=android,ios,linux,macos,windows --org com.chf
 flutter pub get
-flutter pub run build_runner build --delete-conflicting-outputs
-
-# Lancement Android (émulateur ou device USB)
-flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
-> `10.0.2.2` = hôte local depuis l'émulateur Android.
-> Sur device physique, utiliser l'IP LAN de votre poste : `http://192.168.x.y:8080`.
+Puis **appliquez les patches** (lire pour copier-coller) :
+- `android/MANIFEST_PATCH.md` — permission INTERNET + cleartext HTTP dev
+- `ios/INFO_PLIST_PATCH.md` — ATS dev + permissions caméra/galerie
+
+### Lancement
+
+L'URL backend est résolue automatiquement selon la plateforme :
+
+| Cible                              | URL par défaut         |
+|-----------------------------------|------------------------|
+| Émulateur Android                  | `http://10.0.2.2:8080` |
+| Simulateur iOS / desktop / Chrome  | `http://localhost:8080`|
+| Device physique (Android/iOS)      | **à surcharger**       |
+
+```bash
+# Émulateur Android (défaut OK)
+flutter run -d emulator-5554
+
+# Simulateur iOS (défaut OK)
+flutter run -d "iPhone 15"
+
+# Linux desktop / macOS desktop / Chrome
+flutter run -d linux       # ou -d macos / -d chrome
+
+# Device physique Android ou iOS — passer l'IP LAN du poste qui héberge le backend
+flutter run --dart-define=API_BASE_URL=http://192.168.1.42:8080
+
+# Production
+flutter build apk --release --dart-define=API_BASE_URL=https://api.bbcms.chf.org
+flutter build ios --release --dart-define=API_BASE_URL=https://api.bbcms.chf.org
+```
 
 ## Architecture
 

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -8,23 +7,25 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../storage/secure_token_store.dart';
 import 'api_exception.dart';
 import 'api_routes.dart';
+// Conditional import — `dart:io` is unavailable on Web, so the web stub is
+// pulled in instead. Both files export the same `defaultApiBaseUrl()`.
+import '_default_base_io.dart'
+    if (dart.library.html) '_default_base_web.dart';
 
 /// Resolved API base URL, with sensible per-platform defaults.
 ///
 /// Override at runtime: `flutter run --dart-define=API_BASE_URL=...`.
 ///
 /// Defaults:
-/// - Android (emulator only):    http://10.0.2.2:8080   (the host's loopback)
-/// - Everything else (desktop,
-///   web, iOS sim, real device):  http://localhost:8080
+/// - Android emulator:           http://10.0.2.2:8080   (the host's loopback)
+/// - iOS sim / desktop / web:    http://localhost:8080
 ///
-/// On a real Android device, pass your host's LAN IP, e.g.
+/// On a real device (Android or iOS), pass your host's LAN IP, e.g.
 ///   --dart-define=API_BASE_URL=http://192.168.1.42:8080
 String get apiBaseUrl {
   const String fromEnv = String.fromEnvironment('API_BASE_URL');
   if (fromEnv.isNotEmpty) return fromEnv;
-  if (!kIsWeb && Platform.isAndroid) return 'http://10.0.2.2:8080';
-  return 'http://localhost:8080';
+  return defaultApiBaseUrl();
 }
 
 class _RefreshState {
