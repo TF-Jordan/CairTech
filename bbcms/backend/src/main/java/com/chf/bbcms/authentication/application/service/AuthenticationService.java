@@ -94,10 +94,12 @@ public class AuthenticationService implements AuthenticationUseCase {
     private Mono<TokenPair> issueTokenPair(UserAccount account) {
         Mono<Set<String>> permissionsMono = authorizationService.permissionsOf(account.getId());
         // Récupère le bibleClubId du Member STUDENT (si l'utilisateur en a un).
-        // Pour PROFESSIONAL/MENTOR/NATIONAL_LEADER: pas de scope BBC unique → null.
+        // Pour PROFESSIONAL/MENTOR/NATIONAL_LEADER/SYSTEM_ADMIN: pas de scope BBC unique
+        // → Mono empty → bibleClubId restera null dans le JWT.
+        // NB: `Mono.defaultIfEmpty(null)` jette une NPE — on utilise un sentinel UUID(0,0)
+        // ré-interprété comme null après le zip (Mono ne porte pas de valeurs null).
         Mono<java.util.UUID> bibleClubIdMono = memberRepository.findByUserAccountId(account.getId())
-                .map(m -> m.getBibleClubId().orElse(null))
-                .defaultIfEmpty(null);
+                .flatMap(m -> Mono.justOrEmpty(m.getBibleClubId()));
 
         return Mono.zip(permissionsMono, bibleClubIdMono.defaultIfEmpty(new java.util.UUID(0L, 0L)))
                 .flatMap(tuple -> {
